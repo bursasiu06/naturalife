@@ -1,8 +1,298 @@
-Dbody {
-  margin: 0;
-  font-family: Arial, sans-serif;
+* {
+  box-sizing: border-box;
 }
 
-h1 {
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f6f1e7;
+  color: #223322;
+}
+
+.site {
+  min-height: 100vh;
+}
+
+.hero {
+  min-height: 75vh;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.45)),
+    url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1600&q=80");
+  background-size: cover;
+  background-position: center;
+  color: white;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 8%;
+}
+
+.brand {
+  font-size: 28px;
+  font-weight: bold;
+}
+
+.nav-links {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.nav-links a,
+.nav-links button {
+  color: white;
+  text-decoration: none;
+  background: rgba(255,255,255,0.16);
+  border: 1px solid rgba(255,255,255,0.35);
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.hero-content {
+  padding: 90px 8%;
+  max-width: 760px;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 13px;
+  font-weight: bold;
+  color: #d8ffb0;
+}
+
+.eyebrow.dark {
+  color: #557a2f;
+}
+
+.hero h1 {
+  font-size: 58px;
+  line-height: 1.05;
+  margin: 10px 0 18px;
+}
+
+.hero-content p {
+  font-size: 20px;
+  line-height: 1.6;
+}
+
+.primary {
+  display: inline-block;
+  margin-top: 20px;
+  background: #75a843;
+  color: white;
+  padding: 15px 24px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.admin-panel {
+  margin: -45px auto 40px;
+  max-width: 1050px;
+  background: white;
+  padding: 28px;
+  border-radius: 24px;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.15);
+  position: relative;
+}
+
+.login-row,
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.form {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+input,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+textarea {
+  width: 100%;
+  padding: 14px;
+  border: 1px solid #d8d0c2;
+  border-radius: 14px;
+}
+
+textarea {
+  min-height: 110px;
+  grid-column: 1 / -1;
+}
+
+button {
+  background: #2f7d32;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  padding: 13px 18px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.products-section {
+  padding: 40px 8% 80px;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.section-title h2 {
+  font-size: 42px;
+  margin: 8px 0;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.filters button {
+  background: white;
   color: #2f7d32;
+  border: 1px solid #cddfbd;
+}
+
+.filters button.active {
+  background: #2f7d32;
+  color: white;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 26px;
+}
+
+.card {
+  background: white;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+}
+
+.img-wrap {
+  height: 240px;
+  overflow: hidden;
+}
+
+.img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.card-body {
+  padding: 22px;
+}
+
+.tag {
+  background: #e7f3d8;
+  color: #2f7d32;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.card h3 {
+  font-size: 23px;
+  margin: 18px 0 8px;
+}
+
+.card p {
+  color: #666;
+  line-height: 1.5;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 18px 0;
+  align-items: center;
+}
+
+.price-row strong {
+  font-size: 24px;
+  color: #2f7d32;
+}
+
+.actions,
+.admin-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actions a {
+  flex: 1;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 14px;
+  font-weight: bold;
+}
+
+.whatsapp {
+  background: #25d366;
+  color: white;
+}
+
+.email {
+  background: #ece6d8;
+  color: #333;
+}
+
+.danger {
+  background: #b3261e;
+}
+
+.empty {
+  text-align: center;
+  background: white;
+  padding: 30px;
+  border-radius: 18px;
+}
+
+footer {
+  background: #1f321f;
+  color: white;
+  text-align: center;
+  padding: 45px 8%;
+}
+
+@media (max-width: 900px) {
+  .grid,
+  .form {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: 40px;
+  }
+
+  .nav {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
 }

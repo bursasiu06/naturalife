@@ -5,6 +5,14 @@ const WHATSAPP_NUMBER = '40753921023'
 const EMAIL = 'bursasiu_1@yahoo.com'
 const DEFAULT_ADMIN_PASSWORD = 'admin123'
 
+const CATEGORIES = [
+  'Toate',
+  'Pietre Unicat',
+  'Obiecte Lemn',
+  'Căsuțe Păsărele',
+  'Diverse'
+]
+
 export default function App() {
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,6 +24,7 @@ export default function App() {
   const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
+  const [selectedCategory, setSelectedCategory] = useState('Toate')
 
   const [form, setForm] = useState({
     name: '',
@@ -23,7 +32,7 @@ export default function App() {
     details: '',
     price: '',
     stock: '1',
-    category: 'Produse naturale',
+    category: 'Pietre Unicat',
     image_url: ''
   })
 
@@ -48,8 +57,14 @@ export default function App() {
   }
 
   const visibleProducts = useMemo(() => {
-    return products.filter(p => p.active !== false)
-  }, [products])
+    return products.filter(product => {
+      const active = product.active !== false
+      const categoryMatch =
+        selectedCategory === 'Toate' || product.category === selectedCategory
+
+      return active && categoryMatch
+    })
+  }, [products, selectedCategory])
 
   function loginAdmin() {
     if (password === currentAdminPassword) {
@@ -130,7 +145,7 @@ export default function App() {
         details: '',
         price: '',
         stock: '1',
-        category: 'Produse naturale',
+        category: 'Pietre Unicat',
         image_url: ''
       })
 
@@ -170,6 +185,7 @@ export default function App() {
     const msg =
       'Bună ziua! Vreau să comand de pe NaturaLife.ro:\n\n' +
       '🛒 Produs: ' + product.name + '\n' +
+      '📂 Categoria: ' + product.category + '\n' +
       '💰 Preț: ' + product.price + ' lei\n' +
       '📦 Cantitate: \n\n' +
       'Datele mele pentru comandă:\n' +
@@ -186,6 +202,7 @@ export default function App() {
     const body =
       `Bună ziua,%0D%0A%0D%0A` +
       `Vreau să comand produsul: ${product.name}%0D%0A` +
+      `Categoria: ${product.category}%0D%0A` +
       `Preț: ${product.price} lei%0D%0A%0D%0A` +
       `Nume:%0D%0ATelefon:%0D%0AAdresă:`
 
@@ -208,6 +225,15 @@ export default function App() {
     }
   }
 
+  function openCategory(category) {
+    setSelectedCategory(category)
+    setSelectedProduct(null)
+
+    setTimeout(() => {
+      document.getElementById('produse')?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
+  }
+
   return (
     <div className="site">
       <header className="hero">
@@ -215,16 +241,20 @@ export default function App() {
           <div className="brand"><span>🌿</span> NaturaLife</div>
 
           <div className="nav-links">
-            <a href="#produse">Produse</a>
+            <button onClick={() => openCategory('Toate')}>Acasă</button>
+            <button onClick={() => openCategory('Pietre Unicat')}>Pietre Unicat</button>
+            <button onClick={() => openCategory('Obiecte Lemn')}>Obiecte Lemn</button>
+            <button onClick={() => openCategory('Căsuțe Păsărele')}>Căsuțe Păsărele</button>
+            <button onClick={() => openCategory('Diverse')}>Diverse</button>
             <a href="#contact">Contact</a>
             <button onClick={() => setAdminOpen(!adminOpen)}>Admin</button>
           </div>
         </nav>
 
         <div className="hero-content">
-          <p className="eyebrow">Produse naturale premium</p>
-          <h1>Gusturi curate din natură</h1>
-          <p>Produse naturale, atent alese, cu aspect rustic și calitate premium.</p>
+          <p className="eyebrow">Produse naturale și obiecte unicat</p>
+          <h1>Lucruri frumoase, alese din natură</h1>
+          <p>Pietre unicat, obiecte din lemn, căsuțe pentru păsărele și produse diverse cu aspect premium.</p>
           <a className="primary" href="#produse">Vezi produsele</a>
         </div>
       </header>
@@ -283,11 +313,15 @@ export default function App() {
                   onChange={e => setForm({ ...form, stock: e.target.value })}
                 />
 
-                <input
-                  placeholder="Categorie"
+                <select
                   value={form.category}
                   onChange={e => setForm({ ...form, category: e.target.value })}
-                />
+                >
+                  <option value="Pietre Unicat">Pietre Unicat</option>
+                  <option value="Obiecte Lemn">Obiecte Lemn</option>
+                  <option value="Căsuțe Păsărele">Căsuțe Păsărele</option>
+                  <option value="Diverse">Diverse</option>
+                </select>
 
                 <input
                   placeholder="Link poză, opțional"
@@ -325,54 +359,80 @@ export default function App() {
       <main id="produse" className="products-section">
         <div className="section-title">
           <p className="eyebrow dark">Magazin online</p>
-          <h2>Produsele noastre</h2>
-          <p>Produse atent selectate, prezentate simplu, elegant și ușor de comandat.</p>
+          <h2>
+            {selectedCategory === 'Toate'
+              ? 'Toate produsele'
+              : selectedCategory}
+          </h2>
+          <p>
+            {selectedCategory === 'Toate'
+              ? 'Aici apar toate produsele, din toate categoriile.'
+              : `Aici apar produsele din categoria ${selectedCategory}.`}
+          </p>
+        </div>
+
+        <div className="category-menu">
+          {CATEGORIES.map(category => (
+            <button
+              key={category}
+              className={selectedCategory === category ? 'active' : ''}
+              onClick={() => openCategory(category)}
+            >
+              {category}
+            </button>
+          ))}
         </div>
 
         {loading ? (
           <p className="empty">Se încarcă produsele...</p>
         ) : visibleProducts.length === 0 ? (
-          <p className="empty">Nu există produse încă. Intră la Admin și adaugă primul produs.</p>
+          <p className="empty">Nu există produse în această categorie.</p>
         ) : (
           <div className="grid">
-            {visibleProducts.map(p => (
-              <article className="card" key={p.id}>
-                <div className="img-wrap" onClick={() => setSelectedProduct(p)}>
+            {visibleProducts.map(product => (
+              <article className="card" key={product.id}>
+                <div className="img-wrap" onClick={() => setSelectedProduct(product)}>
                   <img
-                    src={p.image_url || 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?auto=format&fit=crop&w=900&q=80'}
-                    alt={p.name}
+                    src={product.image_url || 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?auto=format&fit=crop&w=900&q=80'}
+                    alt={product.name}
                   />
                 </div>
 
                 <div className="card-body">
-                  <span className="tag">{p.category}</span>
-                  <h3 onClick={() => setSelectedProduct(p)}>{p.name}</h3>
-                  <p>{p.description}</p>
+                  <span className="tag">{product.category}</span>
+
+                  <h3 onClick={() => setSelectedProduct(product)}>
+                    {product.name}
+                  </h3>
+
+                  <p>{product.description}</p>
 
                   <div className="price-row">
-                    <strong>{p.price} lei</strong>
-                    <span>{p.stock > 0 ? `Stoc: ${p.stock}` : 'Indisponibil'}</span>
+                    <strong>{product.price} lei</strong>
+                    <span>{product.stock > 0 ? `Stoc: ${product.stock}` : 'Indisponibil'}</span>
                   </div>
 
                   <div className="actions">
-                    <a className="whatsapp" href={whatsapp(p)} target="_blank" rel="noreferrer">
+                    <a className="whatsapp" href={whatsapp(product)} target="_blank" rel="noreferrer">
                       WhatsApp
                     </a>
-                    <button className="share" onClick={() => shareProduct(p)}>
+
+                    <button className="share" onClick={() => shareProduct(product)}>
                       Share
                     </button>
                   </div>
 
-                  <button className="details-btn" onClick={() => setSelectedProduct(p)}>
+                  <button className="details-btn" onClick={() => setSelectedProduct(product)}>
                     Vezi detalii
                   </button>
 
                   {isAdmin && (
                     <div className="admin-actions">
-                      <button onClick={() => toggleActive(p)}>
-                        {p.active ? 'Ascunde' : 'Activează'}
+                      <button onClick={() => toggleActive(product)}>
+                        {product.active ? 'Ascunde' : 'Activează'}
                       </button>
-                      <button className="danger" onClick={() => deleteProduct(p.id)}>
+
+                      <button className="danger" onClick={() => deleteProduct(product.id)}>
                         Șterge
                       </button>
                     </div>
@@ -411,7 +471,9 @@ export default function App() {
               )}
 
               <p className="stock-info">
-                {selectedProduct.stock > 0 ? `Disponibil în stoc: ${selectedProduct.stock}` : 'Momentan indisponibil'}
+                {selectedProduct.stock > 0
+                  ? `Disponibil în stoc: ${selectedProduct.stock}`
+                  : 'Momentan indisponibil'}
               </p>
 
               <div className="modal-actions">
@@ -434,7 +496,7 @@ export default function App() {
 
       <footer id="contact">
         <h2>NaturaLife.ro</h2>
-        <p>Comenzi pe WhatsApp sau email. Produse naturale, alese cu grijă.</p>
+        <p>Comenzi pe WhatsApp sau email. Produse naturale, obiecte unicat și creații alese cu grijă.</p>
         <p>© {new Date().getFullYear()} NaturaLife</p>
       </footer>
     </div>

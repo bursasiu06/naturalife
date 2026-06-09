@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
-const WHATSAPP_NUMBER = '+40753921023'
+const WHATSAPP_NUMBER = '40753921023'
 const EMAIL = 'bursasiu_1@yahoo.com'
 const ADMIN_PASSWORD = 'admin123'
 
@@ -93,33 +93,19 @@ export default function App() {
   }
 
   function whatsapp(product) {
-  const msg = `Bună ziua! Vreau să comand de pe NaturaLife.ro:
+    const msg =
+      'Bună ziua! Vreau să comand de pe NaturaLife.ro:\n\n' +
+      '🛒 Produs: ' + product.name + '\n' +
+      '💰 Preț: ' + product.price + ' lei\n' +
+      '📦 Cantitate: \n\n' +
+      'Datele mele pentru comandă:\n' +
+      '👤 Nume: \n' +
+      '📞 Telefon: \n' +
+      '🏠 Adresă livrare: \n\n' +
+      'Mulțumesc!'
 
-Produs: ${product.name}
-Preț: ${product.price} lei
-
-Nume:
-Telefon:
-Adresă livrare:
-Cantitate:
-
-Mulțumesc!`
-
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-}
-
-Produs: ${product.name}
-Preț: ${product.price} lei
-
-Nume:
-Telefon:
-Adresă livrare:
-Cantitate:
-
-Mulțumesc!`
-
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-}
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
+  }
 
   function email(product) {
     const subject = `Comandă NaturaLife - ${product.name}`

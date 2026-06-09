@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
-const WHATSAPP_NUMBER = '40700000000'
+const WHATSAPP_NUMBER = '+40753921023'
 const EMAIL = 'bursasiu_1@yahoo.com'
 const ADMIN_PASSWORD = 'admin123'
 

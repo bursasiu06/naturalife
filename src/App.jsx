@@ -92,10 +92,21 @@ export default function App() {
     await loadProducts()
   }
 
-  function whatsapp(product) {
-    const msg = `Bună ziua! Vreau să comand: ${product.name} - ${product.price} lei.`
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-  }
+  function whatsapp(product) function whatsapp(product) {
+  const msg = `Bună ziua! Vreau să comand de pe NaturaLife.ro:
+
+Produs: ${product.name}
+Preț: ${product.price} lei
+
+Nume:
+Telefon:
+Adresă livrare:
+Cantitate:
+
+Mulțumesc!`
+
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
+}
 
   function email(product) {
     const subject = `Comandă NaturaLife - ${product.name}`

@@ -1,328 +1,184 @@
-* {
-  box-sizing: border-box;
-}
+/* PRODUSE VANZARE */
 
-body {
-  margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f3efe4;
-  color: #172314;
-}
-
-button {
-  font-family: inherit;
-}
-
-.site {
-  min-height: 100vh;
-}
-
-/* MENIU SUS */
-.floating-nav {
-  position: absolute;
-  top: 18px;
-  right: 45px;
-  z-index: 20;
-  display: flex;
-  gap: 10px;
-}
-
-.floating-nav button {
-  border: 1px solid rgba(255,255,255,.45);
-  background: rgba(20, 25, 20, .45);
-  color: white;
-  padding: 10px 18px;
-  border-radius: 999px;
-  font-size: 16px;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,.25);
-}
-
-.floating-nav button:hover {
-  background: rgba(110, 150, 55, .9);
-}
-
-/* BUTON ADMIN */
-.admin-float {
-  position: fixed;
-  right: 18px;
-  bottom: 18px;
-  z-index: 90;
-  border: 0;
-  border-radius: 999px;
-  padding: 13px 18px;
-  background: #1e2a1d;
-  color: white;
-  font-weight: 900;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(0,0,0,.35);
-}
-
-/* HERO */
-.hero {
-  min-height: 430px;
-  background:
-    linear-gradient(90deg, rgba(8,18,10,.85), rgba(8,18,10,.45), rgba(8,18,10,.85)),
-    url("https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1800&q=80");
-  background-size: cover;
-  background-position: center;
-  color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  text-align: center;
-  padding: 90px 20px 60px;
-  position: relative;
-}
-
-.hero::before {
-  content: "🌿 NaturaLife";
-  position: absolute;
-  top: 22px;
-  left: 45px;
-  font-size: 28px;
-  font-weight: 900;
-}
-
-.eyebrow {
-  font-size: 13px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin: 0 0 10px;
-  color: #dfe8d5;
-}
-
-.hero h1 {
-  margin: 0 auto;
-  max-width: 780px;
-  font-size: 48px;
-  line-height: 1.05;
-  text-transform: uppercase;
-  text-shadow: 0 3px 8px rgba(0,0,0,.45);
-}
-
-.hero p {
-  max-width: 760px;
-  margin: 16px auto 0;
-  font-size: 25px;
-  line-height: 1.35;
-  text-shadow: 0 3px 8px rgba(0,0,0,.45);
-}
-
-/* ADMIN PANEL */
-.admin-panel {
-  width: min(900px, 92%);
-  margin: 28px auto;
-  padding: 24px;
-  background: white;
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.12);
-}
-
-.login-box,
-.form {
-  display: grid;
-  gap: 12px;
-}
-
-input,
-textarea,
-select {
-  width: 100%;
-  border: 1px solid #d6d0c2;
-  border-radius: 14px;
-  padding: 14px;
-  font-size: 16px;
-}
-
-textarea {
-  min-height: 180px;
-}
-
-.form button,
-.login-box button,
-.back-btn,
-.danger {
-  border: 0;
-  border-radius: 14px;
-  padding: 14px;
-  background: #6a9634;
-  color: white;
-  font-weight: 900;
-  cursor: pointer;
-}
-
-/* POSTĂRI */
-.posts-section {
-  width: min(1460px, 96%);
-  margin: 35px auto 70px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-}
-
-.card {
-  background: white;
-  border-radius: 14px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,.12);
-  cursor: pointer;
-  transition: .22s;
-}
-
-.card:hover {
-  transform: translateY(-5px);
-}
-
-.img-wrap {
-  height: 160px;
-  background: #ddd;
-}
-
-.img-wrap img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.card-body {
-  padding: 14px;
-}
-
-.tag {
-  display: none;
-}
-
-.card h3 {
-  margin: 0 0 8px;
-  font-size: 19px;
-  line-height: 1.15;
-  color: #111;
-}
-
-.card p {
-  color: #333;
-  font-size: 14px;
-  line-height: 1.45;
-  margin: 0 0 14px;
-}
-
-.card-footer {
+.product-info {
   display: flex;
   justify-content: space-between;
-  gap: 8px;
   align-items: center;
-  font-size: 13px;
-  color: #333;
+  gap: 10px;
+  margin: 15px 0;
+  padding: 12px;
+  background: #f3efe4;
+  border-radius: 14px;
 }
 
-.card-footer strong {
+.product-info strong {
+  font-size: 22px;
   color: #4d6f2b;
 }
 
-/* POSTARE DESCHISĂ */
-.post-full,
-.single-page {
-  width: min(900px, 92%);
-  margin: 35px auto 70px;
-  background: white;
-  padding: 24px;
-  border-radius: 22px;
-  box-shadow: 0 12px 30px rgba(0,0,0,.12);
+.sale-price {
+  display: block;
+  font-size: 32px;
+  color: #4d6f2b;
+  margin-bottom: 10px;
 }
 
-.post-full img {
-  width: 100%;
-  max-height: 560px;
-  object-fit: cover;
+.sale-box {
+  margin: 20px 0;
+  padding: 20px;
+  background: #f7f4ea;
   border-radius: 18px;
-  margin: 18px 0;
+  border: 1px solid #e3dcc9;
 }
 
-.post-full h2 {
-  font-size: 42px;
-  margin: 12px 0;
+.sale-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
-.post-text {
-  white-space: pre-line;
-  font-size: 18px;
-  line-height: 1.75;
-}
-
-.back-btn {
-  width: auto;
-}
-
-.danger {
-  background: #b42318;
-  margin-top: 20px;
-}
-
-.empty {
+.sale-actions a,
+.sale-actions button {
+  flex: 1;
+  min-width: 120px;
+  border: 0;
+  text-decoration: none;
   text-align: center;
+  border-radius: 14px;
+  padding: 14px;
   font-weight: 800;
-  padding: 35px;
+  cursor: pointer;
+  font-size: 15px;
 }
 
-/* FOOTER */
-footer {
-  text-align: center;
-  padding: 40px 20px;
-  background: #182416;
+/* WHATSAPP */
+
+.whatsapp {
+  background: #25d366;
   color: white;
 }
 
+.whatsapp:hover {
+  opacity: .9;
+}
+
+/* EMAIL */
+
+.email-btn {
+  background: #1e2a1d;
+  color: white;
+}
+
+.email-btn:hover {
+  opacity: .9;
+}
+
+/* SHARE */
+
+.share-btn {
+  background: #1877f2;
+  color: white;
+}
+
+.share-btn:hover {
+  opacity: .9;
+}
+
+/* SHARE FACEBOOK / WHATSAPP */
+
+.share-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.share-row a {
+  flex: 1;
+  min-width: 150px;
+  text-align: center;
+  text-decoration: none;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f1f1f1;
+  color: #222;
+  font-weight: 700;
+}
+
+.share-row a:hover {
+  background: #e5e5e5;
+}
+
+.normal-share {
+  margin-bottom: 25px;
+}
+
+/* CARDURI VANZARE */
+
+.sale-card {
+  border: 2px solid #dce8c9;
+}
+
+.sale-card:hover {
+  border-color: #7aa63d;
+}
+
+.card-sale-actions {
+  margin-top: 12px;
+}
+
+.card-sale-actions a,
+.card-sale-actions button {
+  padding: 10px;
+  font-size: 13px;
+}
+
+/* POZE IN POSTARI */
+
+.inline-post-image {
+  width: 100%;
+  margin: 25px 0;
+  border-radius: 18px;
+  display: block;
+}
+
+.post-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 25px;
+}
+
+.post-gallery img {
+  width: 100%;
+  border-radius: 18px;
+  height: 300px;
+  object-fit: cover;
+}
+
 /* TELEFON */
-@media (max-width: 900px) {
-  .floating-nav {
-    position: static;
-    width: 100%;
-    overflow-x: auto;
-    background: #172314;
-    padding: 10px;
-    justify-content: flex-start;
+
+@media (max-width: 768px) {
+
+  .sale-actions {
+    flex-direction: column;
   }
 
-  .floating-nav button {
-    font-size: 14px;
-    padding: 9px 13px;
+  .share-row {
+    flex-direction: column;
   }
 
-  .hero {
-    min-height: 360px;
-    padding: 45px 18px;
-  }
-
-  .hero::before {
-    position: static;
-    display: block;
-    margin-bottom: 30px;
-    font-size: 26px;
-  }
-
-  .hero h1 {
-    font-size: 34px;
-  }
-
-  .hero p {
-    font-size: 19px;
-  }
-
-  .grid {
+  .post-gallery {
     grid-template-columns: 1fr;
   }
 
-  .img-wrap {
-    height: 230px;
+  .post-gallery img {
+    height: auto;
   }
 
-  .admin-float {
-    right: 12px;
-    bottom: 12px;
+  .product-info {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

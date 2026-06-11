@@ -199,6 +199,11 @@ export default function App() {
     await loadPosts()
   }
 
+  function postUrl(post) {
+    const base = window.location.origin
+    return `${base}/?post=${post.slug || post.id}`
+  }
+
   function whatsappLink(post) {
     const msg = `Bună ziua! Vreau să cumpăr produsul: ${post.title}
 Preț: ${post.price || ''} lei
@@ -222,6 +227,39 @@ Telefon:
 Adresă:`
 
     return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  }
+
+  async function sharePost(post) {
+    const url = postUrl(post)
+    const text = post.category === 'vanzari'
+      ? `${post.title} - ${post.price || ''} lei. Vezi produsul pe Naturalife.ro`
+      : `${post.title} - ${post.excerpt || 'Vezi postarea pe Naturalife.ro'}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: post.title,
+          text,
+          url
+        })
+      } catch (err) {
+        console.log('Share anulat')
+      }
+    } else {
+      await navigator.clipboard.writeText(url)
+      alert('Linkul a fost copiat. Îl poți trimite pe Facebook, WhatsApp sau oriunde dorești.')
+    }
+  }
+
+  function facebookShare(post) {
+    const url = postUrl(post)
+    return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`
+  }
+
+  function whatsappShare(post) {
+    const url = postUrl(post)
+    const text = `${post.title} - ${url}`
+    return `https://wa.me/?text=${encodeURIComponent(text)}`
   }
 
   function renderPostContent(post) {
@@ -422,7 +460,37 @@ Adresă:`
                 <a className="email-btn" href={emailLink(selectedPost)}>
                   Comandă pe Email
                 </a>
+
+                <button className="share-btn" onClick={() => sharePost(selectedPost)}>
+                  Share
+                </button>
               </div>
+
+              <div className="share-row">
+                <a href={facebookShare(selectedPost)} target="_blank" rel="noreferrer">
+                  Share Facebook
+                </a>
+
+                <a href={whatsappShare(selectedPost)} target="_blank" rel="noreferrer">
+                  Share WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
+
+          {selectedPost.category !== 'vanzari' && (
+            <div className="share-row normal-share">
+              <button className="share-btn" onClick={() => sharePost(selectedPost)}>
+                Share postare
+              </button>
+
+              <a href={facebookShare(selectedPost)} target="_blank" rel="noreferrer">
+                Facebook
+              </a>
+
+              <a href={whatsappShare(selectedPost)} target="_blank" rel="noreferrer">
+                WhatsApp
+              </a>
             </div>
           )}
 
@@ -461,10 +529,26 @@ Adresă:`
                     <p>{post.excerpt}</p>
 
                     {post.category === 'vanzari' && (
-                      <div className="product-info">
-                        <strong>{post.price} lei</strong>
-                        <span>{post.stock > 0 ? `Stoc: ${post.stock}` : 'Indisponibil'}</span>
-                      </div>
+                      <>
+                        <div className="product-info">
+                          <strong>{post.price} lei</strong>
+                          <span>{post.stock > 0 ? `Stoc: ${post.stock}` : 'Indisponibil'}</span>
+                        </div>
+
+                        <div className="sale-actions card-sale-actions" onClick={e => e.stopPropagation()}>
+                          <a className="whatsapp" href={whatsappLink(post)} target="_blank" rel="noreferrer">
+                            WhatsApp
+                          </a>
+
+                          <a className="email-btn" href={emailLink(post)}>
+                            Email
+                          </a>
+
+                          <button className="share-btn" onClick={() => sharePost(post)}>
+                            Share
+                          </button>
+                        </div>
+                      </>
                     )}
 
                     <div className="card-footer">

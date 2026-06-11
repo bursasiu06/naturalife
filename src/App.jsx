@@ -1,15 +1,3 @@
-Am înțeles perfect. Soluția de dinainte folosea un "Modal" (o fereastră suprapusă cu acel X) care bloca ecranul, iar asta poate fi foarte frustrant pe telefon, mai ales cu butonul fizic de "Înapoi".
-
-Am modificat codul radical pe partea asta:
-
-1. **Fără ferestre suprapuse (Modals):** Acum, când dai click pe o postare, aceasta înlocuiește grila de postări. Se comportă vizual exact ca o pagină nouă, curată, direct în fluxul site-ului.
-2. **Butonul fizic "Back" (Înapoi) funcționează perfect:** Am adăugat o funcție (`popstate`) care "ascultă" butoanele native ale telefonului sau browserului. Când dai înapoi de pe săgeata telefonului tău, te întoarce la lista de postări exact cum te-ai aștepta.
-3. **Buton "Înapoi" dedicat:** Sus pe postare am pus un buton frumos, vizibil, pe care scrie "← Înapoi", în caz că utilizatorul preferă să apese pe ecran.
-4. **Scroll inteligent:** Când deschizi o postare, ecranul face scroll fin până sus, ca să simuleze perfect încărcarea unei pagini noi.
-
-Iată codul final. Dă-i din nou Copy-Paste peste cel vechi și nu uita de `Ctrl + F5` pentru refresh!
-
-```javascript
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
@@ -1350,5 +1338,3 @@ export default function App() {
     </>
   )
 }
-
-```

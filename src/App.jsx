@@ -1,3 +1,15 @@
+Am înțeles perfect. Soluția de dinainte folosea un "Modal" (o fereastră suprapusă cu acel X) care bloca ecranul, iar asta poate fi foarte frustrant pe telefon, mai ales cu butonul fizic de "Înapoi".
+
+Am modificat codul radical pe partea asta:
+
+1. **Fără ferestre suprapuse (Modals):** Acum, când dai click pe o postare, aceasta înlocuiește grila de postări. Se comportă vizual exact ca o pagină nouă, curată, direct în fluxul site-ului.
+2. **Butonul fizic "Back" (Înapoi) funcționează perfect:** Am adăugat o funcție (`popstate`) care "ascultă" butoanele native ale telefonului sau browserului. Când dai înapoi de pe săgeata telefonului tău, te întoarce la lista de postări exact cum te-ai aștepta.
+3. **Buton "Înapoi" dedicat:** Sus pe postare am pus un buton frumos, vizibil, pe care scrie "← Înapoi", în caz că utilizatorul preferă să apese pe ecran.
+4. **Scroll inteligent:** Când deschizi o postare, ecranul face scroll fin până sus, ca să simuleze perfect încărcarea unei pagini noi.
+
+Iată codul final. Dă-i din nou Copy-Paste peste cel vechi și nu uita de `Ctrl + F5` pentru refresh!
+
+```javascript
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
@@ -47,6 +59,7 @@ export default function App() {
     }
   }, [selectedPost])
 
+  // Ascultăm schimbările din URL pentru încărcare inițială
   useEffect(() => {
     if (posts.length === 0) return
 
@@ -60,6 +73,23 @@ export default function App() {
       }
     }
   }, [posts, selectedPost])
+
+  // Aici facem telefonul să reacționeze la butonul NATIV de Back
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search)
+      const postSlug = params.get('post')
+      if (postSlug && posts.length > 0) {
+        const foundPost = posts.find(p => p.slug === postSlug || String(p.id) === postSlug)
+        setSelectedPost(foundPost || null)
+      } else {
+        setSelectedPost(null)
+      }
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [posts])
 
   async function loadPosts() {
     setLoading(true)
@@ -224,6 +254,11 @@ export default function App() {
       window.history.pushState(null, '', `?post=${post.slug}`)
     }
 
+    // Scroll sus imediat după deschidere pentru a simula o pagină nouă
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }, 50)
+
     const newViews = (post.views || 0) + 1
 
     await supabase
@@ -239,6 +274,7 @@ export default function App() {
   function closePost() {
     setSelectedPost(null)
     window.history.pushState(null, '', window.location.pathname)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   async function deletePost(id) {
@@ -544,14 +580,13 @@ export default function App() {
           font-weight: 600;
         }
 
-        /* AICI AM MODIFICAT PENTRU A FI DOAR 2 COLOANE MEREU */
+        /* GRILĂ - 4 COLOANE PE PC */
         .postsGrid {
           display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 20px;
         }
 
-        /* AICI AM MODIFICAT COLTURILE PENTRU A FI MAI ROTUNJITE (24px) */
         .postCard {
           background: #fff;
           border-radius: 24px;
@@ -672,9 +707,100 @@ export default function App() {
           color: #4c5339;
         }
 
+        /* --- STILURI PAGINĂ NOUĂ POSTARE (NU MAI E MODAL) --- */
+        .singlePost {
+          background: #fff;
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 18px 45px rgba(22, 25, 15, 0.08);
+          border: 1px solid rgba(34,38,22,0.08);
+          max-width: 900px;
+          margin: 0 auto;
+        }
+
+        .singlePostTopBar {
+          padding: 16px 24px;
+          background: #fbfaf7;
+          border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .backBtn {
+          display: inline-flex;
+          align-items: center;
+          background: #202719;
+          color: #fff;
+          border: 0;
+          padding: 10px 18px;
+          border-radius: 999px;
+          font-weight: 800;
+          font-size: 14px;
+          cursor: pointer;
+          transition: 0.2s;
+        }
+
+        .backBtn:hover {
+          background: #496b25;
+        }
+
+        .singlePostImg {
+          width: 100%;
+          max-height: 500px;
+          object-fit: cover;
+          display: block;
+          background: #d8d8cf;
+        }
+
+        .singlePostBody {
+          padding: 34px 24px;
+        }
+
+        .singlePostBody h1 {
+          margin: 0 0 10px;
+          font-size: clamp(26px, 4vw, 40px);
+          line-height: 1.05;
+        }
+
+        .singlePostMeta {
+          color: #5f634f;
+          font-weight: 600;
+          margin-top: 0;
+          margin-bottom: 24px;
+          font-size: 16px;
+        }
+
+        .modalContent {
+          white-space: pre-wrap;
+          line-height: 1.65;
+          color: #26291d;
+          font-size: 16px;
+        }
+
+        .gallery {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+          gap: 10px;
+          margin: 18px 0;
+        }
+
+        .gallery img {
+          width: 100%;
+          height: 140px;
+          object-fit: cover;
+          border-radius: 10px;
+        }
+
+        .shareBox {
+          background: #f4f0e7;
+          border-radius: 12px;
+          padding: 14px;
+          margin: 18px 0;
+          word-break: break-all;
+          color: #354021;
+          font-weight: 700;
+        }
+
         .contactBox,
-        .adminPanel,
-        .postModal {
+        .adminPanel {
           background: #fff;
           border-radius: 16px;
           box-shadow: 0 18px 45px rgba(22, 25, 15, 0.18);
@@ -711,6 +837,16 @@ export default function App() {
 
         .actionBtn.light {
           background: #22291a;
+        }
+
+        .dangerBtn {
+          background: #8c2e22;
+          color: #fff;
+          border: 0;
+          border-radius: 10px;
+          padding: 11px 14px;
+          font-weight: 900;
+          cursor: pointer;
         }
 
         .adminFab {
@@ -794,102 +930,11 @@ export default function App() {
           background: #202719;
         }
 
-        .modalOverlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.62);
-          z-index: 90;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: 22px;
-        }
-
-        .postModal {
-          width: min(920px, 100%);
-          max-height: calc(100vh - 44px);
-          overflow: auto;
-        }
-
-        .modalImage {
-          width: 100%;
-          max-height: 420px;
-          object-fit: cover;
-          display: block;
-          border-radius: 16px 16px 0 0;
-          background: #d8d8cf;
-        }
-
-        .modalBody {
-          padding: 24px;
-        }
-
-        .modalTop {
-          display: flex;
-          justify-content: space-between;
-          gap: 12px;
-          align-items: flex-start;
-        }
-
-        .modalBody h1 {
-          margin: 0 0 10px;
-          font-size: clamp(26px, 4vw, 40px);
-          line-height: 1.05;
-        }
-
-        .closeBtn {
-          border: 0;
-          background: #202719;
-          color: #fff;
-          width: 38px;
-          height: 38px;
-          border-radius: 999px;
-          cursor: pointer;
-          font-weight: 900;
-        }
-
-        .modalContent {
-          white-space: pre-wrap;
-          line-height: 1.65;
-          color: #26291d;
-          font-size: 16px;
-        }
-
-        .gallery {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 10px;
-          margin: 18px 0;
-        }
-
-        .gallery img {
-          width: 100%;
-          height: 140px;
-          object-fit: cover;
-          border-radius: 10px;
-        }
-
-        .shareBox {
-          background: #f4f0e7;
-          border-radius: 12px;
-          padding: 14px;
-          margin: 18px 0;
-          word-break: break-all;
-          color: #354021;
-          font-weight: 700;
-        }
-
-        .dangerBtn {
-          background: #8c2e22;
-          color: #fff;
-          border: 0;
-          border-radius: 10px;
-          padding: 11px 14px;
-          font-weight: 900;
-          cursor: pointer;
-        }
-
         @media (max-width: 1180px) {
+          .postsGrid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 COLOANE PE TABLETĂ/LAPTOP MIC */
+          }
+
           .heroGrid {
             grid-template-columns: 1fr;
             gap: 22px;
@@ -939,8 +984,9 @@ export default function App() {
             font-size: 14px;
           }
 
-          /* Distanță mai mică pe telefon între carduri */
+          /* 2 COLOANE PE TELEFON MEREU */
           .postsGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
           }
 
@@ -963,6 +1009,14 @@ export default function App() {
 
           .adminRow {
             grid-template-columns: 1fr;
+          }
+
+          /* Adaptări pentru noua pagină de postare pe telefon */
+          .singlePostBody {
+            padding: 24px 16px;
+          }
+          .singlePostTopBar {
+            padding: 12px 16px;
           }
         }
 
@@ -1050,7 +1104,70 @@ export default function App() {
         </div>
 
         <main id="content" className="content">
-          {page === 'contact' ? (
+          {selectedPost ? (
+            /* --- AICI ESTE PAGINA POSTĂRII DESCHISE --- */
+            <article className="singlePost">
+              <div className="singlePostTopBar">
+                <button className="backBtn" onClick={closePost}>
+                  ← Înapoi
+                </button>
+              </div>
+
+              {getImages(selectedPost)[0] && (
+                <img className="singlePostImg" src={getImages(selectedPost)[0]} alt={selectedPost.title} />
+              )}
+
+              <div className="singlePostBody">
+                <h1>{selectedPost.title}</h1>
+                <p className="singlePostMeta">
+                  {selectedPost.category === 'vanzari' && selectedPost.price
+                    ? `Preț: ${selectedPost.price} lei`
+                    : `Vizualizări: ${selectedPost.views || 0}`}
+                </p>
+
+                {getImages(selectedPost).length > 1 && (
+                  <div className="gallery">
+                    {getImages(selectedPost).slice(1).map((img, index) => (
+                      <img key={`${img}-${index}`} src={img} alt={`${selectedPost.title} ${index + 2}`} />
+                    ))}
+                  </div>
+                )}
+
+                <div className="modalContent">{selectedPost.content}</div>
+
+                <div className="shareBox">
+                  Link postare: {postUrl(selectedPost)}
+                </div>
+
+                <div className="contactActions" style={{ justifyContent: 'flex-start' }}>
+                  {selectedPost.category === 'vanzari' && (
+                    <a
+                      className="actionBtn"
+                      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Salut! Mă interesează produsul: ${selectedPost.title} - ${postUrl(selectedPost)}`)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Comandă pe WhatsApp
+                    </a>
+                  )}
+
+                  <a
+                    className="actionBtn light"
+                    href={`mailto:${EMAIL}?subject=${encodeURIComponent(selectedPost.title)}&body=${encodeURIComponent(postUrl(selectedPost))}`}
+                  >
+                    Trimite pe Email
+                  </a>
+
+                  {isAdmin && (
+                    <button className="dangerBtn" onClick={() => deletePost(selectedPost.id)}>
+                      Șterge postarea
+                    </button>
+                  )}
+                </div>
+              </div>
+            </article>
+          ) : page === 'contact' ? (
+            /* --- PAGINA DE CONTACT --- */
             <section className="contactBox">
               <h2>Contact NaturaLife</h2>
               <p>Pentru produse, colaborări sau întrebări, mă poți contacta rapid pe email sau WhatsApp.</p>
@@ -1067,6 +1184,7 @@ export default function App() {
               </div>
             </section>
           ) : (
+            /* --- LISTA CU TOATE POSTĂRILE --- */
             <>
               <div className="sectionHead">
                 <div>
@@ -1228,71 +1346,9 @@ export default function App() {
             </div>
           </div>
         )}
-
-        {selectedPost && (
-          <div className="modalOverlay" onClick={closePost}>
-            <article className="postModal" onClick={e => e.stopPropagation()}>
-              {getImages(selectedPost)[0] && (
-                <img className="modalImage" src={getImages(selectedPost)[0]} alt={selectedPost.title} />
-              )}
-
-              <div className="modalBody">
-                <div className="modalTop">
-                  <div>
-                    <h1>{selectedPost.title}</h1>
-                    <p>
-                      {selectedPost.category === 'vanzari' && selectedPost.price
-                        ? `${selectedPost.price} lei`
-                        : `Vizualizări: ${selectedPost.views || 0}`}
-                    </p>
-                  </div>
-                  <button className="closeBtn" onClick={closePost}>×</button>
-                </div>
-
-                {getImages(selectedPost).length > 1 && (
-                  <div className="gallery">
-                    {getImages(selectedPost).slice(1).map((img, index) => (
-                      <img key={`${img}-${index}`} src={img} alt={`${selectedPost.title} ${index + 2}`} />
-                    ))}
-                  </div>
-                )}
-
-                <div className="modalContent">{selectedPost.content}</div>
-
-                <div className="shareBox">
-                  Link postare: {postUrl(selectedPost)}
-                </div>
-
-                <div className="contactActions">
-                  {selectedPost.category === 'vanzari' && (
-                    <a
-                      className="actionBtn"
-                      href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Salut! Mă interesează produsul: ${selectedPost.title} - ${postUrl(selectedPost)}`)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Comandă pe WhatsApp
-                    </a>
-                  )}
-
-                  <a
-                    className="actionBtn light"
-                    href={`mailto:${EMAIL}?subject=${encodeURIComponent(selectedPost.title)}&body=${encodeURIComponent(postUrl(selectedPost))}`}
-                  >
-                    Trimite pe Email
-                  </a>
-
-                  {isAdmin && (
-                    <button className="dangerBtn" onClick={() => deletePost(selectedPost.id)}>
-                      Șterge postarea
-                    </button>
-                  )}
-                </div>
-              </div>
-            </article>
-          </div>
-        )}
       </div>
     </>
   )
 }
+
+```

@@ -5,7 +5,7 @@ const ADMIN_PASSWORD = 'Danimea.06'
 const EMAIL = 'bursasiu_1@yahoo.com'
 const WHATSAPP_NUMBER = '40753921023'
 
-const CATEGORIES = [
+const MENU = [
   { key: 'acasa', label: 'Acasă' },
   { key: 'noutati', label: 'Noutăți' },
   { key: 'top', label: 'Top citite' },
@@ -40,12 +40,9 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (!selectedPost) {
-      document.title = 'Naturalife.ro - Natură, Ciuperci, Pietre și Vânzări'
-      return
-    }
-
-    document.title = `${selectedPost.title} | Naturalife.ro`
+    document.title = selectedPost
+      ? `${selectedPost.title} | Naturalife.ro`
+      : 'Naturalife.ro - Natură, Ciuperci, Pietre și Vânzări'
   }, [selectedPost])
 
   useEffect(() => {
@@ -53,16 +50,10 @@ export default function App() {
 
     const params = new URLSearchParams(window.location.search)
     const postSlug = params.get('post')
-
     if (!postSlug) return
 
-    const foundPost = posts.find(
-      post => post.slug === postSlug || String(post.id) === postSlug
-    )
-
-    if (foundPost) {
-      setSelectedPost(foundPost)
-    }
+    const foundPost = posts.find(post => post.slug === postSlug || String(post.id) === postSlug)
+    if (foundPost) setSelectedPost(foundPost)
   }, [posts])
 
   async function loadPosts() {
@@ -73,11 +64,7 @@ export default function App() {
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error(error)
-      alert('Nu am putut încărca postările: ' + error.message)
-    }
-
+    if (error) console.error(error)
     setPosts(data || [])
     setLoading(false)
   }
@@ -89,36 +76,30 @@ export default function App() {
         .sort((a, b) => (b.views || 0) - (a.views || 0))
     }
 
-    if (page === 'noutati') {
-      return posts.filter(post => post.category === 'noutati')
-    }
-
-    if (page === 'vanzari') {
-      return posts.filter(post => post.category === 'vanzari')
-    }
-
-    if (page === 'contact') {
-      return []
-    }
+    if (page === 'noutati') return posts.filter(post => post.category === 'noutati')
+    if (page === 'vanzari') return posts.filter(post => post.category === 'vanzari')
+    if (page === 'contact') return []
 
     return posts.filter(post => post.category !== 'vanzari')
   }, [posts, page])
 
+  function changePage(nextPage) {
+    setPage(nextPage)
+    setSelectedPost(null)
+    window.history.pushState(null, '', window.location.pathname)
+  }
+
   function updateForm(field, value) {
-    setForm(current => ({
-      ...current,
-      [field]: value
-    }))
+    setForm(current => ({ ...current, [field]: value }))
   }
 
   function loginAdmin() {
     if (password === ADMIN_PASSWORD) {
       setIsAdmin(true)
       setPassword('')
-      return
+    } else {
+      alert('Parolă greșită')
     }
-
-    alert('Parolă greșită')
   }
 
   function logoutAdmin() {
@@ -136,12 +117,16 @@ export default function App() {
       .replace(/(^-|-$)+/g, '')
   }
 
+  function getImages(post) {
+    if (Array.isArray(post.image_urls) && post.image_urls.length > 0) return post.image_urls
+    if (post.image_url) return [post.image_url]
+    return []
+  }
+
   async function uploadImages() {
     const uploadedUrls = []
 
-    if (form.image_url.trim()) {
-      uploadedUrls.push(form.image_url.trim())
-    }
+    if (form.image_url.trim()) uploadedUrls.push(form.image_url.trim())
 
     const files = Array.from(imageFiles).slice(0, 10)
 
@@ -160,9 +145,7 @@ export default function App() {
         .from('post-images')
         .getPublicUrl(fileName)
 
-      if (data?.publicUrl) {
-        uploadedUrls.push(data.publicUrl)
-      }
+      if (data?.publicUrl) uploadedUrls.push(data.publicUrl)
     }
 
     return uploadedUrls
@@ -171,19 +154,12 @@ export default function App() {
   async function addPost(event) {
     event.preventDefault()
 
-    if (!isAdmin) {
-      alert('Trebuie să fii logat ca admin.')
-      return
-    }
-
+    if (!isAdmin) return alert('Trebuie să fii logat ca admin.')
     if (!form.title.trim() || !form.excerpt.trim() || !form.content.trim()) {
-      alert('Completează titlul, descrierea scurtă și textul postării.')
-      return
+      return alert('Completează titlul, descrierea scurtă și textul postării.')
     }
-
     if (form.category === 'vanzari' && !form.price) {
-      alert('Pentru vânzări trebuie să pui prețul.')
-      return
+      return alert('Pentru vânzări trebuie să pui prețul.')
     }
 
     setSaving(true)
@@ -216,7 +192,6 @@ export default function App() {
         price: '',
         stock: '1'
       })
-
       setImageFiles([])
       await loadPosts()
       alert('Postarea a fost publicată cu succes!')
@@ -230,9 +205,7 @@ export default function App() {
   async function openPost(post) {
     setSelectedPost(post)
 
-    if (post.slug) {
-      window.history.pushState(null, '', `?post=${post.slug}`)
-    }
+    if (post.slug) window.history.pushState(null, '', `?post=${post.slug}`)
 
     const newViews = (post.views || 0) + 1
 
@@ -241,14 +214,9 @@ export default function App() {
       .update({ views: newViews })
       .eq('id', post.id)
 
-    if (error) {
-      console.error(error)
-      return
+    if (!error) {
+      setPosts(current => current.map(item => item.id === post.id ? { ...item, views: newViews } : item))
     }
-
-    setPosts(current =>
-      current.map(item => item.id === post.id ? { ...item, views: newViews } : item)
-    )
   }
 
   function closePost() {
@@ -258,301 +226,303 @@ export default function App() {
 
   async function deletePost(id) {
     if (!isAdmin) return
-
-    const confirmed = window.confirm('Ștergi această postare?')
-    if (!confirmed) return
+    if (!window.confirm('Ștergi această postare?')) return
 
     const { error } = await supabase
       .from('posts')
       .delete()
       .eq('id', id)
 
-    if (error) {
-      alert(error.message)
-      return
-    }
+    if (error) return alert(error.message)
 
     setSelectedPost(null)
     await loadPosts()
   }
 
   function postUrl(post) {
-    const base = window.location.origin
-    return `${base}/?post=${post.slug || post.id}`
-  }
-
-  function getImages(post) {
-    if (Array.isArray(post.image_urls) && post.image_urls.length > 0) {
-      return post.image_urls
-    }
-
-    if (post.image_url) {
-      return [post.image_url]
-    }
-
-    return []
-  }
-
-  function changePage(nextPage) {
-    setPage(nextPage)
-    setSelectedPost(null)
-    window.history.pushState(null, '', window.location.pathname)
+    return `${window.location.origin}/?post=${post.slug || post.id}`
   }
 
   return (
     <div className="site">
       <style>{`
-        * {
-          box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
         body {
           margin: 0;
-          background: #f4f7f2;
-          color: #172016;
+          background: #f3f6ef;
+          color: #152015;
           font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
+        button, input, textarea, select { font: inherit; }
+        button { cursor: pointer; }
+        .site { min-height: 100vh; }
 
-        .site {
-          min-height: 100vh;
+        .top-shell {
+          background:
+            radial-gradient(circle at 18% 20%, rgba(255,255,255,.22), transparent 26%),
+            linear-gradient(135deg, rgba(14,43,20,.96), rgba(43,112,49,.9)),
+            url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1800&q=80');
+          background-size: cover;
+          background-position: center;
+          color: white;
+          padding: 18px 16px 78px;
+        }
+        .wrap { width: min(1180px, 100%); margin: 0 auto; }
+
+        .header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          padding: 10px 0 34px;
+        }
+        .logo {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          font-size: 24px;
+          font-weight: 950;
+          letter-spacing: -.04em;
+          white-space: nowrap;
+        }
+        .logo-icon {
+          width: 44px;
+          height: 44px;
+          display: grid;
+          place-items: center;
+          border-radius: 15px;
+          background: rgba(255,255,255,.18);
+          border: 1px solid rgba(255,255,255,.25);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+        }
+        .nav {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 8px;
+          padding: 6px;
+          border-radius: 999px;
+          background: rgba(255,255,255,.13);
+          border: 1px solid rgba(255,255,255,.18);
+          backdrop-filter: blur(14px);
+        }
+        .nav-btn {
+          min-width: 92px;
+          height: 42px;
+          border: 0;
+          border-radius: 999px;
+          padding: 0 14px;
+          color: white;
+          background: transparent;
+          font-size: 14px;
+          font-weight: 900;
+          transition: .18s ease;
+          white-space: nowrap;
+        }
+        .nav-btn:hover,
+        .nav-btn.active {
+          color: #17451f;
+          background: white;
+          box-shadow: 0 10px 24px rgba(0,0,0,.14);
         }
 
         .hero {
-          position: relative;
-          overflow: hidden;
-          padding: 28px 18px 70px;
-          color: white;
-          background:
-            linear-gradient(135deg, rgba(15, 48, 23, .94), rgba(29, 94, 45, .88)),
-            url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1600&q=80');
-          background-size: cover;
-          background-position: center;
-        }
-
-        .hero-inner {
-          max-width: 1180px;
-          margin: 0 auto;
-        }
-
-        .topbar {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 16px;
-          margin-bottom: 48px;
-        }
-
-        .brand {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          font-weight: 900;
-          font-size: 22px;
-          letter-spacing: -.04em;
-        }
-
-        .brand-mark {
           display: grid;
-          place-items: center;
-          width: 44px;
-          height: 44px;
-          border-radius: 16px;
-          background: rgba(255, 255, 255, .16);
-          border: 1px solid rgba(255, 255, 255, .28);
-          backdrop-filter: blur(12px);
+          grid-template-columns: 1.1fr .9fr;
+          align-items: end;
+          gap: 28px;
+          min-height: 330px;
         }
-
-        .nav {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
+        .eyebrow {
+          display: inline-flex;
+          align-items: center;
           gap: 8px;
-        }
-
-        .nav button,
-        .admin-toggle,
-        .btn {
-          border: 0;
-          cursor: pointer;
-          font-weight: 800;
+          margin-bottom: 18px;
+          padding: 8px 12px;
           border-radius: 999px;
-          transition: .2s ease;
+          background: rgba(255,255,255,.14);
+          border: 1px solid rgba(255,255,255,.22);
+          font-weight: 900;
+          color: rgba(255,255,255,.92);
         }
-
-        .nav button {
-          padding: 11px 15px;
-          color: white;
-          background: rgba(255, 255, 255, .12);
-          border: 1px solid rgba(255, 255, 255, .18);
-        }
-
-        .nav button:hover,
-        .nav button.active {
-          background: white;
-          color: #194c22;
-        }
-
         .hero h1 {
-          max-width: 780px;
           margin: 0;
-          font-size: clamp(38px, 7vw, 82px);
+          max-width: 790px;
+          font-size: clamp(38px, 6vw, 78px);
           line-height: .96;
-          letter-spacing: -.07em;
+          letter-spacing: -.075em;
         }
-
         .hero p {
-          max-width: 640px;
-          margin: 24px 0 0;
-          color: rgba(255, 255, 255, .86);
+          margin: 22px 0 0;
+          max-width: 650px;
+          color: rgba(255,255,255,.88);
           font-size: 19px;
           line-height: 1.6;
         }
-
-        .hero-actions {
+        .hero-card {
+          justify-self: end;
+          width: min(390px, 100%);
+          padding: 22px;
+          border-radius: 30px;
+          background: rgba(255,255,255,.14);
+          border: 1px solid rgba(255,255,255,.23);
+          backdrop-filter: blur(16px);
+          box-shadow: 0 24px 70px rgba(0,0,0,.18);
+        }
+        .hero-card strong { display: block; font-size: 22px; margin-bottom: 8px; }
+        .hero-card span { color: rgba(255,255,255,.84); line-height: 1.5; }
+        .actions {
           display: flex;
           flex-wrap: wrap;
-          gap: 12px;
-          margin-top: 28px;
+          gap: 10px;
+          margin-top: 22px;
         }
 
         .btn {
+          min-height: 44px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 46px;
-          padding: 12px 18px;
+          gap: 8px;
+          border: 0;
+          border-radius: 999px;
+          padding: 11px 17px;
+          color: #17451f;
+          background: white;
           text-decoration: none;
-          color: #143b1d;
-          background: #fff;
+          font-weight: 950;
+          box-shadow: 0 10px 22px rgba(21,62,27,.10);
+          transition: .18s ease;
         }
+        .btn:hover { transform: translateY(-1px); }
+        .btn.green { color: white; background: #206b32; }
+        .btn.dark { color: white; background: #183a20; }
+        .btn.soft { color: white; background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.22); }
+        .btn.full { width: 100%; }
 
-        .btn.dark {
+        .admin-float {
+          position: fixed;
+          right: 18px;
+          bottom: 18px;
+          z-index: 20;
+          width: 58px;
+          height: 58px;
+          border: 0;
+          border-radius: 50%;
           color: white;
-          background: #1f6b32;
-        }
-
-        .btn.ghost {
-          color: white;
-          background: rgba(255, 255, 255, .13);
-          border: 1px solid rgba(255, 255, 255, .22);
+          background: #183a20;
+          box-shadow: 0 16px 35px rgba(0,0,0,.22);
+          font-size: 22px;
         }
 
         main {
-          max-width: 1180px;
-          margin: -36px auto 0;
-          padding: 0 18px 46px;
           position: relative;
           z-index: 2;
+          width: min(1180px, calc(100% - 32px));
+          margin: -42px auto 52px;
         }
-
-        .panel {
-          background: rgba(255, 255, 255, .92);
-          border: 1px solid rgba(28, 72, 35, .08);
+        .panel,
+        .admin-panel,
+        .post-view {
+          background: rgba(255,255,255,.96);
+          border: 1px solid rgba(42,92,44,.09);
           border-radius: 30px;
-          box-shadow: 0 22px 70px rgba(21, 55, 25, .14);
-          padding: 24px;
+          box-shadow: 0 24px 75px rgba(22,56,25,.14);
         }
-
+        .panel { padding: 22px; }
+        .admin-panel {
+          margin-bottom: 18px;
+          padding: 22px;
+          background: #eef7ea;
+          border: 1px dashed #8fb889;
+        }
         .section-head {
           display: flex;
           justify-content: space-between;
-          align-items: end;
+          align-items: flex-end;
           gap: 16px;
-          margin-bottom: 20px;
+          margin-bottom: 18px;
         }
-
         .section-head h2 {
           margin: 0;
-          font-size: 30px;
-          letter-spacing: -.04em;
+          font-size: clamp(26px, 4vw, 38px);
+          line-height: 1;
+          letter-spacing: -.05em;
         }
-
-        .section-head span {
-          color: #60705e;
-          font-weight: 700;
-        }
+        .section-head span { color: #667260; font-weight: 800; }
 
         .grid {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 18px;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 16px;
         }
-
         .card {
           overflow: hidden;
-          background: white;
-          border: 1px solid #e5ece2;
           border-radius: 24px;
-          box-shadow: 0 12px 30px rgba(20, 61, 25, .08);
+          background: white;
+          border: 1px solid #e3ebdf;
+          box-shadow: 0 12px 34px rgba(21,61,27,.08);
+          transition: .2s ease;
         }
-
-        .card-image {
+        .card:hover { transform: translateY(-3px); box-shadow: 0 20px 45px rgba(21,61,27,.13); }
+        .card-img {
           width: 100%;
-          aspect-ratio: 4 / 3;
-          object-fit: cover;
-          background: linear-gradient(135deg, #dfeadc, #f6f8f3);
+          aspect-ratio: 1 / .78;
           display: block;
+          object-fit: cover;
+          background: linear-gradient(135deg, #dfead8, #f8faf4);
         }
-
-        .card-body {
-          padding: 18px;
-        }
-
+        .card-body { padding: 15px; }
         .badge {
           display: inline-flex;
-          margin-bottom: 10px;
-          padding: 7px 10px;
+          align-items: center;
+          margin-bottom: 9px;
+          padding: 6px 9px;
           border-radius: 999px;
-          background: #eaf4e7;
-          color: #286a30;
-          font-size: 12px;
-          font-weight: 900;
-          text-transform: uppercase;
+          background: #e8f4e4;
+          color: #276b31;
+          font-size: 11px;
+          font-weight: 950;
           letter-spacing: .04em;
+          text-transform: uppercase;
         }
-
         .card h3 {
-          margin: 0 0 8px;
-          font-size: 21px;
-          letter-spacing: -.03em;
+          margin: 0 0 7px;
+          font-size: 18px;
           line-height: 1.16;
+          letter-spacing: -.035em;
         }
-
         .card p {
-          margin: 0 0 14px;
-          color: #5f6c5d;
-          line-height: 1.5;
+          margin: 0 0 12px;
+          color: #62705e;
+          font-size: 14px;
+          line-height: 1.45;
         }
-
         .meta {
           display: flex;
           justify-content: space-between;
           align-items: center;
           gap: 10px;
-          color: #6b7868;
-          font-size: 14px;
-          font-weight: 700;
+          color: #6a7667;
+          font-size: 13px;
+          font-weight: 850;
         }
-
         .price {
-          color: #1f6b32;
-          font-size: 20px;
-          font-weight: 950;
+          color: #1f7031;
+          font-size: 18px;
+          font-weight: 1000;
+          white-space: nowrap;
         }
-
-        .admin-box {
-          margin-top: 22px;
-          padding: 20px;
-          border-radius: 24px;
-          background: #eff7ec;
-          border: 1px dashed #94b98e;
-        }
-
-        .admin-toggle {
-          margin-top: 18px;
-          padding: 12px 18px;
-          color: white;
-          background: #193d20;
+        .stock { margin-top: 9px !important; font-weight: 850; }
+        .empty {
+          padding: 40px 16px;
+          text-align: center;
+          color: #687662;
+          background: white;
+          border-radius: 22px;
+          font-weight: 800;
         }
 
         .form-grid {
@@ -560,158 +530,149 @@ export default function App() {
           grid-template-columns: repeat(2, minmax(0, 1fr));
           gap: 12px;
         }
-
-        input,
-        textarea,
-        select {
+        .full { grid-column: 1 / -1; }
+        input, textarea, select {
           width: 100%;
-          border: 1px solid #d7e3d3;
+          border: 1px solid #d5e2d0;
           border-radius: 16px;
           padding: 13px 14px;
-          font: inherit;
           background: white;
+          color: #152015;
+          outline: none;
         }
+        textarea { min-height: 160px; resize: vertical; }
+        input:focus, textarea:focus, select:focus { border-color: #2d873d; box-shadow: 0 0 0 4px rgba(45,135,61,.12); }
 
-        textarea {
-          min-height: 160px;
-          resize: vertical;
-        }
-
-        .full {
-          grid-column: 1 / -1;
-        }
-
-        .post-view {
-          background: white;
-          border-radius: 30px;
-          overflow: hidden;
-          box-shadow: 0 22px 70px rgba(21, 55, 25, .14);
-        }
-
+        .post-view { overflow: hidden; }
         .post-cover {
           width: 100%;
-          max-height: 520px;
+          max-height: 540px;
           object-fit: cover;
           display: block;
+          background: #e8efe3;
         }
-
-        .post-content {
-          padding: clamp(22px, 5vw, 54px);
-        }
-
+        .post-content { padding: clamp(22px, 5vw, 54px); }
         .post-content h1 {
-          margin: 0 0 14px;
+          margin: 14px 0 14px;
           font-size: clamp(34px, 6vw, 64px);
-          line-height: 1;
-          letter-spacing: -.06em;
+          line-height: .98;
+          letter-spacing: -.065em;
         }
-
         .post-text {
-          color: #303b2f;
+          margin-top: 22px;
+          color: #2d392b;
           white-space: pre-wrap;
           font-size: 18px;
           line-height: 1.75;
         }
-
         .gallery {
           display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+          grid-template-columns: repeat(4, minmax(0, 1fr));
           gap: 12px;
           margin: 22px 0;
         }
-
         .gallery img {
           width: 100%;
-          aspect-ratio: 1 / 1;
+          aspect-ratio: 1;
           object-fit: cover;
           border-radius: 18px;
         }
-
         .contact-card {
           display: grid;
           gap: 14px;
-          padding: 26px;
+          padding: 24px;
           background: white;
-          border-radius: 26px;
-          border: 1px solid #e3ece1;
-        }
-
-        .empty {
-          padding: 34px;
-          text-align: center;
-          color: #667462;
-          background: white;
+          border: 1px solid #e3ebdf;
           border-radius: 24px;
         }
 
-        @media (max-width: 900px) {
-          .topbar {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
+        @media (max-width: 1050px) {
+          .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .hero { grid-template-columns: 1fr; }
+          .hero-card { justify-self: start; }
+        }
+        @media (max-width: 780px) {
+          .top-shell { padding-bottom: 62px; }
+          .header { align-items: flex-start; flex-direction: column; }
           .nav {
+            width: 100%;
             justify-content: flex-start;
+            overflow-x: auto;
+            border-radius: 22px;
           }
-
-          .grid,
-          .form-grid,
-          .gallery {
-            grid-template-columns: 1fr;
-          }
+          .nav-btn { min-width: auto; padding: 0 13px; }
+          .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+          .form-grid, .gallery { grid-template-columns: 1fr; }
+          .section-head { align-items: flex-start; flex-direction: column; }
+          main { width: min(100% - 20px, 1180px); }
+          .panel { padding: 14px; border-radius: 24px; }
+          .card { border-radius: 20px; }
+          .card-body { padding: 12px; }
+          .card h3 { font-size: 16px; }
+          .card p { font-size: 13px; }
+        }
+        @media (max-width: 430px) {
+          .grid { grid-template-columns: 1fr; }
+          .hero h1 { font-size: 40px; }
         }
       `}</style>
 
-      <header className="hero">
-        <div className="hero-inner">
-          <div className="topbar">
-            <div className="brand">
-              <span className="brand-mark">🌿</span>
+      <button
+        className="admin-float"
+        type="button"
+        title="Admin"
+        onClick={() => setAdminOpen(open => !open)}
+      >
+        ⚙️
+      </button>
+
+      <section className="top-shell">
+        <div className="wrap">
+          <header className="header">
+            <div className="logo">
+              <span className="logo-icon">🌿</span>
               <span>Naturalife.ro</span>
             </div>
 
             <nav className="nav">
-              {CATEGORIES.map(item => (
+              {MENU.map(item => (
                 <button
                   key={item.key}
                   type="button"
-                  className={page === item.key ? 'active' : ''}
+                  className={`nav-btn ${page === item.key ? 'active' : ''}`}
                   onClick={() => changePage(item.key)}
                 >
                   {item.label}
                 </button>
               ))}
             </nav>
+          </header>
+
+          <div className="hero">
+            <div>
+              <span className="eyebrow">🌲 Blog & produse naturale</span>
+              <h1>Natură, ciuperci, pietre unicat și povești frumoase.</h1>
+              <p>
+                Naturalife.ro adună articole, fotografii, descoperiri din natură și obiecte unicat,
+                într-un site curat, modern și ușor de folosit.
+              </p>
+              <div className="actions">
+                <button className="btn" type="button" onClick={() => changePage('noutati')}>Vezi noutățile</button>
+                <button className="btn soft" type="button" onClick={() => changePage('vanzari')}>Produse disponibile</button>
+              </div>
+            </div>
+
+            <div className="hero-card">
+              <strong>Administrare simplă</strong>
+              <span>Adaugi postări, poze, produse, preț și stoc direct din butonul admin.</span>
+            </div>
           </div>
-
-          <h1>Natură, ciuperci, pietre unicat și obiecte frumoase.</h1>
-          <p>
-            Un blog curat și modern pentru povești din natură, fotografii,
-            descoperiri, produse unicat și lucruri făcute cu pasiune.
-          </p>
-
-          <div className="hero-actions">
-            <button className="btn" type="button" onClick={() => changePage('noutati')}>
-              Vezi noutățile
-            </button>
-            <button className="btn ghost" type="button" onClick={() => changePage('vanzari')}>
-              Vezi vânzările
-            </button>
-          </div>
-
-          <button
-            className="admin-toggle"
-            type="button"
-            onClick={() => setAdminOpen(open => !open)}
-          >
-            {adminOpen ? 'Închide admin' : 'Admin'}
-          </button>
         </div>
-      </header>
+      </section>
 
       <main>
         {adminOpen && (
-          <section className="admin-box">
+          <section className="admin-panel">
             {!isAdmin ? (
               <div className="form-grid">
                 <input
@@ -723,9 +684,7 @@ export default function App() {
                     if (event.key === 'Enter') loginAdmin()
                   }}
                 />
-                <button className="btn dark" type="button" onClick={loginAdmin}>
-                  Intră în admin
-                </button>
+                <button className="btn dark" type="button" onClick={loginAdmin}>Intră în admin</button>
               </div>
             ) : (
               <form onSubmit={addPost}>
@@ -734,9 +693,7 @@ export default function App() {
                     <h2>Adaugă postare</h2>
                     <span>Poți adăuga până la 10 poze la o postare.</span>
                   </div>
-                  <button className="btn dark" type="button" onClick={logoutAdmin}>
-                    Ieșire admin
-                  </button>
+                  <button className="btn dark" type="button" onClick={logoutAdmin}>Ieșire admin</button>
                 </div>
 
                 <div className="form-grid">
@@ -755,32 +712,32 @@ export default function App() {
                   </select>
 
                   <input
+                    className="full"
                     placeholder="Descriere scurtă"
                     value={form.excerpt}
                     onChange={event => updateForm('excerpt', event.target.value)}
-                    className="full"
                   />
 
                   <textarea
+                    className="full"
                     placeholder="Textul postării"
                     value={form.content}
                     onChange={event => updateForm('content', event.target.value)}
-                    className="full"
                   />
 
                   <input
+                    className="full"
                     placeholder="Link poză principală, opțional"
                     value={form.image_url}
                     onChange={event => updateForm('image_url', event.target.value)}
-                    className="full"
                   />
 
                   <input
+                    className="full"
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={event => setImageFiles(event.target.files || [])}
-                    className="full"
                   />
 
                   {form.category === 'vanzari' && (
@@ -802,7 +759,7 @@ export default function App() {
                     </>
                   )}
 
-                  <button className="btn dark full" type="submit" disabled={saving}>
+                  <button className="btn green full" type="submit" disabled={saving}>
                     {saving ? 'Se publică...' : 'Publică postarea'}
                   </button>
                 </div>
@@ -814,29 +771,21 @@ export default function App() {
         {selectedPost ? (
           <article className="post-view">
             {getImages(selectedPost)[0] && (
-              <img
-                className="post-cover"
-                src={getImages(selectedPost)[0]}
-                alt={selectedPost.title}
-              />
+              <img className="post-cover" src={getImages(selectedPost)[0]} alt={selectedPost.title} />
             )}
 
             <div className="post-content">
-              <button className="btn dark" type="button" onClick={closePost}>
-                Înapoi
-              </button>
+              <button className="btn dark" type="button" onClick={closePost}>Înapoi</button>
 
-              <span className="badge" style={{ marginTop: 24 }}>
-                {selectedPost.category === 'vanzari' ? 'Vânzare' : 'Blog'}
-              </span>
+              <div style={{ marginTop: 22 }}>
+                <span className="badge">{selectedPost.category === 'vanzari' ? 'Vânzare' : 'Blog'}</span>
+              </div>
 
               <h1>{selectedPost.title}</h1>
 
               <div className="meta">
                 <span>{selectedPost.views || 0} vizualizări</span>
-                {selectedPost.category === 'vanzari' && (
-                  <span className="price">{selectedPost.price} lei</span>
-                )}
+                {selectedPost.category === 'vanzari' && <span className="price">{selectedPost.price} lei</span>}
               </div>
 
               {getImages(selectedPost).length > 1 && (
@@ -849,42 +798,27 @@ export default function App() {
 
               <div className="post-text">{selectedPost.content}</div>
 
-              <div className="hero-actions">
-                <a className="btn dark" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-                  Scrie pe WhatsApp
-                </a>
-                <a className="btn" href={`mailto:${EMAIL}`}>
-                  Trimite email
-                </a>
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={() => navigator.clipboard.writeText(postUrl(selectedPost))}
-                >
-                  Copiază link
-                </button>
-
-                {isAdmin && (
-                  <button className="btn dark" type="button" onClick={() => deletePost(selectedPost.id)}>
-                    Șterge postarea
-                  </button>
-                )}
+              <div className="actions">
+                <a className="btn green" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">Scrie pe WhatsApp</a>
+                <a className="btn" href={`mailto:${EMAIL}`}>Trimite email</a>
+                <button className="btn" type="button" onClick={() => navigator.clipboard.writeText(postUrl(selectedPost))}>Copiază link</button>
+                {isAdmin && <button className="btn dark" type="button" onClick={() => deletePost(selectedPost.id)}>Șterge postarea</button>}
               </div>
             </div>
           </article>
         ) : page === 'contact' ? (
           <section className="panel">
             <div className="section-head">
-              <h2>Contact</h2>
-              <span>Naturalife.ro</span>
+              <div>
+                <h2>Contact</h2>
+                <span>Naturalife.ro</span>
+              </div>
             </div>
 
             <div className="contact-card">
               <strong>Email: {EMAIL}</strong>
               <strong>WhatsApp: +{WHATSAPP_NUMBER}</strong>
-              <a className="btn dark" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">
-                Deschide WhatsApp
-              </a>
+              <a className="btn green" href={`https://wa.me/${WHATSAPP_NUMBER}`} target="_blank" rel="noreferrer">Deschide WhatsApp</a>
             </div>
           </section>
         ) : (
@@ -913,38 +847,26 @@ export default function App() {
                 {filteredPosts.map(post => (
                   <article className="card" key={post.id}>
                     {getImages(post)[0] ? (
-                      <img className="card-image" src={getImages(post)[0]} alt={post.title} />
+                      <img className="card-img" src={getImages(post)[0]} alt={post.title} />
                     ) : (
-                      <div className="card-image" />
+                      <div className="card-img" />
                     )}
 
                     <div className="card-body">
-                      <span className="badge">
-                        {post.category === 'vanzari' ? 'Vânzare' : 'Blog'}
-                      </span>
-
+                      <span className="badge">{post.category === 'vanzari' ? 'Vânzare' : 'Blog'}</span>
                       <h3>{post.title}</h3>
                       <p>{post.excerpt}</p>
 
                       <div className="meta">
                         <span>{post.views || 0} vizualizări</span>
-                        {post.category === 'vanzari' && (
-                          <span className="price">{post.price} lei</span>
-                        )}
+                        {post.category === 'vanzari' && <span className="price">{post.price} lei</span>}
                       </div>
 
                       {post.category === 'vanzari' && (
-                        <p style={{ marginTop: 10 }}>
-                          {Number(post.stock) > 0 ? `În stoc: ${post.stock}` : 'Indisponibil'}
-                        </p>
+                        <p className="stock">{Number(post.stock) > 0 ? `În stoc: ${post.stock}` : 'Indisponibil'}</p>
                       )}
 
-                      <button
-                        className="btn dark"
-                        type="button"
-                        onClick={() => openPost(post)}
-                        style={{ width: '100%', marginTop: 14 }}
-                      >
+                      <button className="btn green full" type="button" onClick={() => openPost(post)} style={{ marginTop: 13 }}>
                         Deschide
                       </button>
                     </div>

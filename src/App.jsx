@@ -45,20 +45,22 @@ export default function App() {
   }
 
   const filteredPosts = useMemo(() => {
-    if (page === 'top') {
-      return [...posts].sort((a, b) => (b.views || 0) - (a.views || 0))
-    }
-
-    if (page === 'noutati') {
-      return posts.filter(p => p.category === 'noutati')
-    }
-
-    if (page === 'vanzari') {
-      return posts.filter(p => p.category === 'vanzari')
-    }
-
+  if (page === 'top') {
     return posts
-  }, [posts, page])
+      .filter(p => p.category !== 'vanzari')
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
+  }
+
+  if (page === 'noutati') {
+    return posts.filter(p => p.category === 'noutati')
+  }
+
+  if (page === 'vanzari') {
+    return posts.filter(p => p.category === 'vanzari')
+  }
+
+  return posts.filter(p => p.category !== 'vanzari')
+}, [posts, page])
 
   function loginAdmin() {
     if (password === ADMIN_PASSWORD) {

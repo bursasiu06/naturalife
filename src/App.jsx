@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
-const ADMIN_PASSWORD = 'admin123'
+const ADMIN_PASSWORD = 'Danimea.06'
 const EMAIL = 'bursasiu_1@yahoo.com'
 
 export default function App() {
@@ -57,8 +57,12 @@ export default function App() {
   }, [posts, page])
 
   function loginAdmin() {
-    if (password === ADMIN_PASSWORD) setIsAdmin(true)
-    else alert('Parolă greșită')
+    if (password === ADMIN_PASSWORD) {
+      setIsAdmin(true)
+      setPassword('')
+    } else {
+      alert('Parolă greșită')
+    }
   }
 
   function makeSlug(text) {
@@ -92,6 +96,10 @@ export default function App() {
   async function addPost(e) {
     e.preventDefault()
 
+    if (!isAdmin) {
+      return alert('Trebuie să fii logat ca admin.')
+    }
+
     if (!form.title || !form.excerpt || !form.content) {
       return alert('Completează titlul, descrierea scurtă și textul postării.')
     }
@@ -120,6 +128,7 @@ export default function App() {
         category: 'noutati',
         image_url: ''
       })
+
       setImageFile(null)
       await loadPosts()
       alert('Postarea a fost publicată cu succes!')
@@ -146,6 +155,7 @@ export default function App() {
   }
 
   async function deletePost(id) {
+    if (!isAdmin) return
     if (!confirm('Ștergi această postare?')) return
 
     const { error } = await supabase
@@ -157,6 +167,12 @@ export default function App() {
 
     setSelectedPost(null)
     await loadPosts()
+  }
+
+  function logoutAdmin() {
+    setIsAdmin(false)
+    setAdminOpen(false)
+    setPassword('')
   }
 
   function pageTitle() {
@@ -208,54 +224,57 @@ export default function App() {
                 onChange={e => setPassword(e.target.value)}
               />
               <button onClick={loginAdmin}>Intră</button>
-              <small>Parola inițială este: admin123</small>
             </div>
           ) : (
-            <form className="form" onSubmit={addPost}>
-              <input
-                placeholder="Titlu postare"
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-              />
+            <>
+              <button onClick={logoutAdmin}>Ieși din admin</button>
 
-              <input
-                placeholder="Descriere scurtă pentru prima pagină"
-                value={form.excerpt}
-                onChange={e => setForm({ ...form, excerpt: e.target.value })}
-              />
+              <form className="form" onSubmit={addPost}>
+                <input
+                  placeholder="Titlu postare"
+                  value={form.title}
+                  onChange={e => setForm({ ...form, title: e.target.value })}
+                />
 
-              <select
-                value={form.category}
-                onChange={e => setForm({ ...form, category: e.target.value })}
-              >
-                <option value="noutati">Noutăți</option>
-                <option value="vanzari">Vânzări</option>
-                <option value="diverse">Diverse</option>
-              </select>
+                <input
+                  placeholder="Descriere scurtă pentru prima pagină"
+                  value={form.excerpt}
+                  onChange={e => setForm({ ...form, excerpt: e.target.value })}
+                />
 
-              <input
-                placeholder="Link poză, opțional"
-                value={form.image_url}
-                onChange={e => setForm({ ...form, image_url: e.target.value })}
-              />
+                <select
+                  value={form.category}
+                  onChange={e => setForm({ ...form, category: e.target.value })}
+                >
+                  <option value="noutati">Noutăți</option>
+                  <option value="vanzari">Vânzări</option>
+                  <option value="diverse">Diverse</option>
+                </select>
 
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={e => setImageFile(e.target.files?.[0] || null)}
-              />
+                <input
+                  placeholder="Link poză, opțional"
+                  value={form.image_url}
+                  onChange={e => setForm({ ...form, image_url: e.target.value })}
+                />
 
-              <textarea
-                placeholder="Scrie aici textul postării..."
-                value={form.content}
-                onChange={e => setForm({ ...form, content: e.target.value })}
-              />
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={e => setImageFile(e.target.files?.[0] || null)}
+                />
 
-              <button disabled={saving}>
-                {saving ? 'Se publică...' : 'Publică postarea'}
-              </button>
-            </form>
+                <textarea
+                  placeholder="Scrie aici textul postării..."
+                  value={form.content}
+                  onChange={e => setForm({ ...form, content: e.target.value })}
+                />
+
+                <button disabled={saving}>
+                  {saving ? 'Se publică...' : 'Publică postarea'}
+                </button>
+              </form>
+            </>
           )}
         </section>
       )}

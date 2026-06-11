@@ -544,15 +544,17 @@ export default function App() {
           font-weight: 600;
         }
 
+        /* AICI AM MODIFICAT PENTRU A FI DOAR 2 COLOANE MEREU */
         .postsGrid {
           display: grid;
-          grid-template-columns: repeat(5, minmax(0, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 20px;
         }
 
+        /* AICI AM MODIFICAT COLTURILE PENTRU A FI MAI ROTUNJITE (24px) */
         .postCard {
           background: #fff;
-          border-radius: 10px;
+          border-radius: 24px;
           overflow: hidden;
           border: 1px solid rgba(34, 38, 22, 0.09);
           box-shadow: 0 12px 34px rgba(38, 45, 24, 0.12);
@@ -888,10 +890,6 @@ export default function App() {
         }
 
         @media (max-width: 1180px) {
-          .postsGrid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-
           .heroGrid {
             grid-template-columns: 1fr;
             gap: 22px;
@@ -941,8 +939,8 @@ export default function App() {
             font-size: 14px;
           }
 
+          /* Distanță mai mică pe telefon între carduri */
           .postsGrid {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
           }
 
@@ -969,10 +967,6 @@ export default function App() {
         }
 
         @media (max-width: 470px) {
-          .postsGrid {
-            grid-template-columns: 1fr;
-          }
-
           .heroTitle {
             font-size: 30px;
           }

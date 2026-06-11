@@ -14,7 +14,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [password, setPassword] = useState('')
   const [saving, setSaving] = useState(false)
-  const [imageFile, setImageFile] = useState(null)
+  const [imageFiles, setImageFiles] = useState([])
 
   const [form, setForm] = useState({
     title: '',
@@ -30,6 +30,7 @@ export default function App() {
 
   async function loadPosts() {
     setLoading(true)
+
     const { data, error } = await supabase
       .from('posts')
       .select('*')
@@ -65,6 +66,12 @@ export default function App() {
     }
   }
 
+  function logoutAdmin() {
+    setIsAdmin(false)
+    setAdminOpen(false)
+    setPassword('')
+  }
+
   function makeSlug(text) {
     return text
       .toLowerCase()
@@ -74,23 +81,33 @@ export default function App() {
       .replace(/(^-|-$)+/g, '')
   }
 
-  async function uploadImage() {
-    if (!imageFile) return form.image_url
+  async function uploadImages() {
+    const uploadedUrls = []
 
-    const ext = imageFile.name.split('.').pop()
-    const fileName = `${Date.now()}-${makeSlug(form.title)}.${ext}`
+    if (form.image_url) {
+      uploadedUrls.push(form.image_url)
+    }
 
-    const { error } = await supabase.storage
-      .from('post-images')
-      .upload(fileName, imageFile)
+    const files = Array.from(imageFiles).slice(0, 10)
 
-    if (error) throw error
+    for (const file of files) {
+      const ext = file.name.split('.').pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}-${makeSlug(form.title)}.${ext}`
 
-    const { data } = supabase.storage
-      .from('post-images')
-      .getPublicUrl(fileName)
+      const { error } = await supabase.storage
+        .from('post-images')
+        .upload(fileName, file)
 
-    return data.publicUrl
+      if (error) throw error
+
+      const { data } = supabase.storage
+        .from('post-images')
+        .getPublicUrl(fileName)
+
+      uploadedUrls.push(data.publicUrl)
+    }
+
+    return uploadedUrls
   }
 
   async function addPost(e) {
@@ -107,7 +124,8 @@ export default function App() {
     setSaving(true)
 
     try {
-      const imageUrl = await uploadImage()
+      const imageUrls = await uploadImages()
+      const mainImage = imageUrls[0] || ''
 
       const { error } = await supabase.from('posts').insert({
         title: form.title,
@@ -115,7 +133,8 @@ export default function App() {
         excerpt: form.excerpt,
         content: form.content,
         category: form.category,
-        image_url: imageUrl,
+        image_url: mainImage,
+        image_urls: imageUrls,
         views: 0
       })
 
@@ -129,7 +148,7 @@ export default function App() {
         image_url: ''
       })
 
-      setImageFile(null)
+      setImageFiles([])
       await loadPosts()
       alert('Postarea a fost publicată cu succes!')
     } catch (err) {
@@ -169,10 +188,43 @@ export default function App() {
     await loadPosts()
   }
 
-  function logoutAdmin() {
-    setIsAdmin(false)
-    setAdminOpen(false)
-    setPassword('')
+  function renderPostContent(post) {
+    const images = post.image_urls || []
+    const extraImages = images.slice(1)
+    const paragraphs = post.content
+      .split('\n')
+      .map(p => p.trim())
+      .filter(Boolean)
+
+    if (paragraphs.length === 0) {
+      return null
+    }
+
+    return (
+      <div className="post-text">
+        {paragraphs.map((paragraph, index) => (
+          <div key={index}>
+            <p>{paragraph}</p>
+
+            {extraImages[index] && (
+              <img
+                className="inline-post-image"
+                src={extraImages[index]}
+                alt={`Poză ${index + 2}`}
+              />
+            )}
+          </div>
+        ))}
+
+        {extraImages.length > paragraphs.length && (
+          <div className="post-gallery">
+            {extraImages.slice(paragraphs.length).map((url, index) => (
+              <img key={index} src={url} alt={`Poză galerie ${index + 1}`} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
   }
 
   function pageTitle() {
@@ -252,7 +304,7 @@ export default function App() {
                 </select>
 
                 <input
-                  placeholder="Link poză, opțional"
+                  placeholder="Link poză directă, opțional"
                   value={form.image_url}
                   onChange={e => setForm({ ...form, image_url: e.target.value })}
                 />
@@ -260,12 +312,14 @@ export default function App() {
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={e => setImageFiles(e.target.files || [])}
                 />
 
+                <small>Poți selecta până la 10 poze. Prima poză va fi poza principală.</small>
+
                 <textarea
-                  placeholder="Scrie aici textul postării..."
+                  placeholder="Scrie aici textul postării. Pentru poze integrate frumos, scrie textul pe paragrafe separate."
                   value={form.content}
                   onChange={e => setForm({ ...form, content: e.target.value })}
                 />
@@ -290,13 +344,17 @@ export default function App() {
         <article className="post-full">
           <button className="back-btn" onClick={() => setSelectedPost(null)}>← Înapoi</button>
 
-          {selectedPost.image_url && (
-            <img src={selectedPost.image_url} alt={selectedPost.title} />
+          {(selectedPost.image_urls?.[0] || selectedPost.image_url) && (
+            <img
+              src={selectedPost.image_urls?.[0] || selectedPost.image_url}
+              alt={selectedPost.title}
+            />
           )}
 
           <p className="tag">{selectedPost.category} • {selectedPost.views || 0} vizualizări</p>
           <h2>{selectedPost.title}</h2>
-          <div className="post-text">{selectedPost.content}</div>
+
+          {renderPostContent(selectedPost)}
 
           {isAdmin && (
             <button className="danger" onClick={() => deletePost(selectedPost.id)}>
@@ -316,7 +374,7 @@ export default function App() {
                 <article className="card" key={post.id} onClick={() => openPost(post)}>
                   <div className="img-wrap">
                     <img
-                      src={post.image_url || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80'}
+                      src={post.image_urls?.[0] || post.image_url || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80'}
                       alt={post.title}
                     />
                   </div>

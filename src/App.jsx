@@ -238,14 +238,16 @@ export default function App() {
   async function openPost(post) {
     setSelectedPost(post)
 
-    if (post.slug) {
-      window.history.pushState(null, '', `?post=${post.slug}`)
+    const slug = post.slug || post.id
+    const currentParams = new URLSearchParams(window.location.search)
+
+    // Deschidem postarea ca pagină reală în istoric, nu ca popup/modal.
+    // Așa butonul Back de pe telefon revine corect la lista de postări.
+    if (currentParams.get('post') !== String(slug)) {
+      window.history.pushState({ post: slug }, '', `?post=${slug}`)
     }
 
-    // Scroll sus imediat după deschidere pentru a simula o pagină nouă
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' })
-    }, 50)
+    window.scrollTo({ top: 0, behavior: 'auto' })
 
     const newViews = (post.views || 0) + 1
 
@@ -260,9 +262,14 @@ export default function App() {
   }
 
   function closePost() {
-    setSelectedPost(null)
-    window.history.pushState(null, '', window.location.pathname)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+    const params = new URLSearchParams(window.location.search)
+
+    if (params.get('post')) {
+      window.history.back()
+    } else {
+      setSelectedPost(null)
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
   }
 
   async function deletePost(id) {
@@ -288,7 +295,7 @@ export default function App() {
   function goToPage(nextPage) {
     setPage(nextPage)
     setSelectedPost(null)
-    window.history.pushState(null, '', window.location.pathname)
+    window.history.replaceState(null, '', window.location.pathname)
     setTimeout(() => {
       const el = document.getElementById('content')
       if (el) el.scrollIntoView({ behavior: 'smooth' })
@@ -568,21 +575,22 @@ export default function App() {
           font-weight: 600;
         }
 
-        /* GRILĂ - 4 COLOANE PE PC */
+        /* GRILĂ - 4 COLOANE PE PC, 2 PE TELEFON */
         .postsGrid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 20px;
+          gap: 22px;
         }
 
         .postCard {
           background: #fff;
-          border-radius: 24px;
+          border-radius: 22px;
           overflow: hidden;
           border: 1px solid rgba(34, 38, 22, 0.09);
           box-shadow: 0 12px 34px rgba(38, 45, 24, 0.12);
           cursor: pointer;
           transition: transform 0.2s, box-shadow 0.2s;
+          min-height: 100%;
         }
 
         .postCard:hover {
@@ -592,7 +600,7 @@ export default function App() {
 
         .cardImage {
           width: 100%;
-          height: 142px;
+          height: 150px;
           object-fit: cover;
           display: block;
           background: linear-gradient(135deg, #d7d5ca, #b5c19d);
@@ -698,11 +706,11 @@ export default function App() {
         /* --- STILURI PAGINĂ NOUĂ POSTARE (NU MAI E MODAL) --- */
         .singlePost {
           background: #fff;
-          border-radius: 24px;
+          border-radius: 26px;
           overflow: hidden;
           box-shadow: 0 18px 45px rgba(22, 25, 15, 0.08);
           border: 1px solid rgba(34,38,22,0.08);
-          max-width: 900px;
+          max-width: 980px;
           margin: 0 auto;
         }
 
@@ -919,10 +927,6 @@ export default function App() {
         }
 
         @media (max-width: 1180px) {
-          .postsGrid {
-            grid-template-columns: repeat(3, minmax(0, 1fr)); /* 3 COLOANE PE TABLETĂ/LAPTOP MIC */
-          }
-
           .heroGrid {
             grid-template-columns: 1fr;
             gap: 22px;
@@ -934,6 +938,15 @@ export default function App() {
 
           .topBar {
             margin-bottom: 40px;
+          }
+        }
+
+
+
+        @media (max-width: 899px) {
+          .postsGrid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
           }
         }
 
@@ -979,7 +992,7 @@ export default function App() {
           }
 
           .cardImage {
-            height: 120px;
+            height: 118px;
           }
 
           .cardTitle {
@@ -1020,6 +1033,7 @@ export default function App() {
       `}</style>
 
       <div className="site">
+        {!selectedPost && (
         <header className="hero">
           <div className="heroInner">
             <div className="topBar">
@@ -1076,7 +1090,9 @@ export default function App() {
             </div>
           </div>
         </header>
+        )}
 
+        {!selectedPost && (
         <div className="centerMenuWrap">
           <nav className="centerMenu">
             {NAV_ITEMS.map(item => (
@@ -1090,6 +1106,7 @@ export default function App() {
             ))}
           </nav>
         </div>
+        )}
 
         <main id="content" className="content">
           {selectedPost ? (

@@ -292,6 +292,23 @@ export default function App() {
     return `${base}/?post=${post.slug || post.id}`
   }
 
+  function facebookShareUrl(post) {
+    return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl(post))}`
+  }
+
+  function whatsappShareUrl(post) {
+    return `https://wa.me/?text=${encodeURIComponent(`${post.title} - ${postUrl(post)}`)}`
+  }
+
+  async function copyPostLink(post) {
+    try {
+      await navigator.clipboard.writeText(postUrl(post))
+      alert('Link copiat!')
+    } catch (err) {
+      alert('Nu am putut copia automat. Link: ' + postUrl(post))
+    }
+  }
+
   function goToPage(nextPage) {
     setPage(nextPage)
     setSelectedPost(null)
@@ -649,6 +666,7 @@ export default function App() {
           align-items: center;
           gap: 7px;
           white-space: nowrap;
+          min-width: 0;
         }
 
         .avatar {
@@ -659,6 +677,53 @@ export default function App() {
           place-items: center;
           background: #e8e1d5;
           font-size: 12px;
+          flex: 0 0 auto;
+        }
+
+        .authorName {
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .viewsBadge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          color: #64704a;
+          font-weight: 900;
+          white-space: nowrap;
+          background: #f4f0e7;
+          border-radius: 999px;
+          padding: 4px 8px;
+        }
+
+        .cardRightActions {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 7px;
+          flex: 0 0 auto;
+        }
+
+        .miniShareFb {
+          width: 26px;
+          height: 26px;
+          border-radius: 999px;
+          display: inline-grid;
+          place-items: center;
+          background: #eef4ff;
+          color: #1877f2;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 950;
+          border: 1px solid rgba(24, 119, 242, 0.18);
+          transition: 0.2s;
+        }
+
+        .miniShareFb:hover {
+          transform: translateY(-1px);
+          background: #1877f2;
+          color: #fff;
         }
 
         .readMore {
@@ -786,13 +851,60 @@ export default function App() {
         }
 
         .shareBox {
-          background: #f4f0e7;
-          border-radius: 12px;
-          padding: 14px;
-          margin: 18px 0;
-          word-break: break-all;
+          background: linear-gradient(180deg, #f9f6ef, #f0eadf);
+          border: 1px solid rgba(60, 70, 38, 0.09);
+          border-radius: 18px;
+          padding: 18px;
+          margin: 24px 0 8px;
           color: #354021;
-          font-weight: 700;
+        }
+
+        .shareTitle {
+          margin: 0 0 12px;
+          font-size: 15px;
+          font-weight: 950;
+          color: #202719;
+        }
+
+        .shareButtons {
+          display: flex;
+          align-items: center;
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+
+        .shareBtn {
+          border: 0;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          padding: 12px 17px;
+          border-radius: 999px;
+          color: #fff;
+          font-size: 14px;
+          font-weight: 950;
+          cursor: pointer;
+          box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+          transition: 0.2s;
+        }
+
+        .shareBtn:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+        }
+
+        .shareBtn.facebook {
+          background: #1877f2;
+        }
+
+        .shareBtn.whatsapp {
+          background: #25d366;
+        }
+
+        .shareBtn.copy {
+          background: #202719;
         }
 
         .contactBox,
@@ -1004,8 +1116,26 @@ export default function App() {
           }
 
           .cardMeta {
-            align-items: flex-start;
-            flex-direction: column;
+            align-items: center;
+            flex-direction: row;
+          }
+
+          .authorName {
+            max-width: 70px;
+          }
+
+          .viewsBadge {
+            padding: 4px 7px;
+          }
+
+          .readMore {
+            display: none;
+          }
+
+          .miniShareFb {
+            width: 25px;
+            height: 25px;
+            font-size: 13px;
           }
 
           .adminRow {
@@ -1141,7 +1271,34 @@ export default function App() {
                 <div className="modalContent">{selectedPost.content}</div>
 
                 <div className="shareBox">
-                  Link postare: {postUrl(selectedPost)}
+                  <p className="shareTitle">Distribuie această postare</p>
+                  <div className="shareButtons">
+                    <a
+                      className="shareBtn facebook"
+                      href={facebookShareUrl(selectedPost)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      📘 Facebook
+                    </a>
+
+                    <a
+                      className="shareBtn whatsapp"
+                      href={whatsappShareUrl(selectedPost)}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      💬 WhatsApp
+                    </a>
+
+                    <button
+                      className="shareBtn copy"
+                      type="button"
+                      onClick={() => copyPostLink(selectedPost)}
+                    >
+                      🔗 Copiază link
+                    </button>
+                  </div>
                 </div>
 
                 <div className="contactActions" style={{ justifyContent: 'flex-start' }}>
@@ -1155,13 +1312,6 @@ export default function App() {
                       Comandă pe WhatsApp
                     </a>
                   )}
-
-                  <a
-                    className="actionBtn light"
-                    href={`mailto:${EMAIL}?subject=${encodeURIComponent(selectedPost.title)}&body=${encodeURIComponent(postUrl(selectedPost))}`}
-                  >
-                    Trimite pe Email
-                  </a>
 
                   {isAdmin && (
                     <button className="dangerBtn" onClick={() => deletePost(selectedPost.id)}>
@@ -1231,9 +1381,25 @@ export default function App() {
                           <div className="cardMeta">
                             <span className="author">
                               <span className="avatar">👤</span>
-                              <span>Authors info</span>
+                              <span className="authorName">Authors info</span>
                             </span>
-                            <span className="readMore">Citește mai mult</span>
+
+                            <span className="cardRightActions">
+                              <span className="viewsBadge" title="Vizualizări">
+                                👁️ {post.views || 0}
+                              </span>
+
+                              <a
+                                className="miniShareFb"
+                                href={facebookShareUrl(post)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="Distribuie pe Facebook"
+                                onClick={e => e.stopPropagation()}
+                              >
+                                f
+                              </a>
+                            </span>
                           </div>
                         </div>
                       </article>

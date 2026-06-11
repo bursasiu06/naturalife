@@ -3,7 +3,7 @@ import { supabase } from './supabase'
 
 const ADMIN_PASSWORD = 'Danimea.06'
 const EMAIL = 'bursasiu_1@yahoo.com'
-const WHATSAPP_NUMBER = '40700000000'
+const WHATSAPP_NUMBER = '40753921023'
 
 export default function App() {
   const [posts, setPosts] = useState([])

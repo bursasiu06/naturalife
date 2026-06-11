@@ -1,178 +1,327 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
-const WHATSAPP_NUMBER = '40700000000'
-const EMAIL = 'bursasiu_1@yahoo.com'
 const ADMIN_PASSWORD = 'admin123'
+const EMAIL = 'bursasiu_1@yahoo.com'
 
 export default function App() {
-  const [products, setProducts] = useState([])
+  const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState('acasa')
+  const [selectedPost, setSelectedPost] = useState(null)
+
   const [adminOpen, setAdminOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [password, setPassword] = useState('')
-  const [category, setCategory] = useState('Toate')
   const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState({
-    name: '', description: '', price: '', stock: '1', category: 'Ciuperci', image_url: ''
-  })
   const [imageFile, setImageFile] = useState(null)
 
-  useEffect(() => { loadProducts() }, [])
+  const [form, setForm] = useState({
+    title: '',
+    excerpt: '',
+    content: '',
+    category: 'noutati',
+    image_url: ''
+  })
 
-  async function loadProducts() {
+  useEffect(() => {
+    loadPosts()
+  }, [])
+
+  async function loadPosts() {
     setLoading(true)
     const { data, error } = await supabase
-      .from('products')
+      .from('posts')
       .select('*')
       .order('created_at', { ascending: false })
+
     if (error) console.error(error)
-    setProducts(data || [])
+    setPosts(data || [])
     setLoading(false)
   }
 
-  const categories = useMemo(() => {
-    const list = products.map(p => p.category).filter(Boolean)
-    return ['Toate', ...new Set(list)]
-  }, [products])
+  const filteredPosts = useMemo(() => {
+    if (page === 'top') {
+      return [...posts].sort((a, b) => (b.views || 0) - (a.views || 0))
+    }
 
-  const visibleProducts = products.filter(p => p.active !== false && (category === 'Toate' || p.category === category))
+    if (page === 'noutati') {
+      return posts.filter(p => p.category === 'noutati')
+    }
+
+    if (page === 'vanzari') {
+      return posts.filter(p => p.category === 'vanzari')
+    }
+
+    return posts
+  }, [posts, page])
 
   function loginAdmin() {
     if (password === ADMIN_PASSWORD) setIsAdmin(true)
     else alert('Parolă greșită')
   }
 
+  function makeSlug(text) {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
+  }
+
   async function uploadImage() {
     if (!imageFile) return form.image_url
+
     const ext = imageFile.name.split('.').pop()
-    const fileName = `${Date.now()}.${ext}`
-    const { error } = await supabase.storage.from('products').upload(fileName, imageFile)
+    const fileName = `${Date.now()}-${makeSlug(form.title)}.${ext}`
+
+    const { error } = await supabase.storage
+      .from('post-images')
+      .upload(fileName, imageFile)
+
     if (error) throw error
-    const { data } = supabase.storage.from('products').getPublicUrl(fileName)
+
+    const { data } = supabase.storage
+      .from('post-images')
+      .getPublicUrl(fileName)
+
     return data.publicUrl
   }
 
-  async function addProduct(e) {
+  async function addPost(e) {
     e.preventDefault()
-    if (!form.name || !form.price) return alert('Completează numele și prețul')
+
+    if (!form.title || !form.excerpt || !form.content) {
+      return alert('Completează titlul, descrierea scurtă și textul postării.')
+    }
+
     setSaving(true)
+
     try {
       const imageUrl = await uploadImage()
-      const { error } = await supabase.from('products').insert({
-        id: Date.now(),
-        name: form.name,
-        description: form.description,
-        price: Number(form.price),
-        image_url: imageUrl,
-        stock: Number(form.stock || 0),
+
+      const { error } = await supabase.from('posts').insert({
+        title: form.title,
+        slug: `${makeSlug(form.title)}-${Date.now()}`,
+        excerpt: form.excerpt,
+        content: form.content,
         category: form.category,
-        active: true,
+        image_url: imageUrl,
+        views: 0
       })
+
       if (error) throw error
-      setForm({ name: '', description: '', price: '', stock: '1', category: 'Ciuperci', image_url: '' })
+
+      setForm({
+        title: '',
+        excerpt: '',
+        content: '',
+        category: 'noutati',
+        image_url: ''
+      })
       setImageFile(null)
-      await loadProducts()
+      await loadPosts()
+      alert('Postarea a fost publicată cu succes!')
     } catch (err) {
       alert('Eroare: ' + err.message)
     }
+
     setSaving(false)
   }
 
-  async function deleteProduct(id) {
-    if (!confirm('Ștergi produsul?')) return
-    const { error } = await supabase.from('products').delete().eq('id', id)
+  async function openPost(post) {
+    setSelectedPost(post)
+
+    const newViews = (post.views || 0) + 1
+
+    await supabase
+      .from('posts')
+      .update({ views: newViews })
+      .eq('id', post.id)
+
+    setPosts(current =>
+      current.map(p => p.id === post.id ? { ...p, views: newViews } : p)
+    )
+  }
+
+  async function deletePost(id) {
+    if (!confirm('Ștergi această postare?')) return
+
+    const { error } = await supabase
+      .from('posts')
+      .delete()
+      .eq('id', id)
+
     if (error) alert(error.message)
-    await loadProducts()
+
+    setSelectedPost(null)
+    await loadPosts()
   }
 
-  async function toggleActive(product) {
-    const { error } = await supabase.from('products').update({ active: !product.active }).eq('id', product.id)
-    if (error) alert(error.message)
-    await loadProducts()
+  function pageTitle() {
+    if (page === 'top') return 'Top Postări'
+    if (page === 'noutati') return 'Noutăți'
+    if (page === 'vanzari') return 'Vânzări'
+    if (page === 'contact') return 'Contact'
+    return 'Naturalife.ro'
   }
 
-  function whatsapp(product) {
-    const msg = `Bună ziua! Vreau să comand: ${product.name} - ${product.price} lei.`
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-  }
-
-  function email(product) {
-    const subject = `Comandă NaturaLife - ${product.name}`
-    const body = `Bună ziua,%0D%0A%0D%0AVreau să comand produsul: ${product.name}%0D%0APreț: ${product.price} lei%0D%0A%0D%0ANume:%0D%0ATelefon:%0D%0AAdresă:`
-    return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${body}`
+  function pageSubtitle() {
+    if (page === 'top') return 'Cele mai accesate postări apar primele.'
+    if (page === 'noutati') return 'Ultimele noutăți și postări din natură.'
+    if (page === 'vanzari') return 'Produse, obiecte și lucruri disponibile.'
+    if (page === 'contact') return 'Pentru întrebări, colaborări sau comenzi.'
+    return 'Blog modern cu postări zilnice, natură, poze, noutăți și vânzări.'
   }
 
   return (
     <div className="site">
+      <nav className="floating-nav">
+        <button onClick={() => { setPage('acasa'); setSelectedPost(null) }}>Acasă</button>
+        <button onClick={() => { setPage('top'); setSelectedPost(null) }}>Top Postări</button>
+        <button onClick={() => { setPage('noutati'); setSelectedPost(null) }}>Noutăți</button>
+        <button onClick={() => { setPage('vanzari'); setSelectedPost(null) }}>Vânzări</button>
+        <button onClick={() => { setPage('contact'); setSelectedPost(null) }}>Contact</button>
+      </nav>
+
+      <button className="admin-float" onClick={() => setAdminOpen(!adminOpen)}>
+        Admin
+      </button>
+
       <header className="hero">
-        <nav className="nav">
-          <div className="brand"><span>🌿</span> NaturaLife</div>
-          <div className="nav-links">
-            <a href="#produse">Produse</a>
-            <a href="#contact">Contact</a>
-            <button onClick={() => setAdminOpen(!adminOpen)}>Admin</button>
-          </div>
-        </nav>
-        <div className="hero-content">
-          <p className="eyebrow">Produse naturale</p>
-          <h1>Gusturi curate din natură</h1>
-          <p>Ciuperci uscate, plante, bunătăți tradiționale și produse naturale atent alese.</p>
-          <a className="primary" href="#produse">Vezi produsele</a>
-        </div>
+        <p className="eyebrow">🌿 Blog natural</p>
+        <h1>{pageTitle()}</h1>
+        <p>{pageSubtitle()}</p>
       </header>
 
-      {adminOpen && <section className="admin-panel">
-        <h2>Panou administrator</h2>
-        {!isAdmin ? <div className="login-row">
-          <input type="password" placeholder="Parola admin" value={password} onChange={e => setPassword(e.target.value)} />
-          <button onClick={loginAdmin}>Intră</button>
-          <small>Parola inițială: admin123</small>
-        </div> : <form className="form" onSubmit={addProduct}>
-          <input placeholder="Nume produs" value={form.name} onChange={e => setForm({...form, name: e.target.value})} />
-          <input placeholder="Preț, ex: 35" type="number" value={form.price} onChange={e => setForm({...form, price: e.target.value})} />
-          <input placeholder="Stoc" type="number" value={form.stock} onChange={e => setForm({...form, stock: e.target.value})} />
-          <input placeholder="Categorie" value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
-          <input placeholder="Link poză, opțional" value={form.image_url} onChange={e => setForm({...form, image_url: e.target.value})} />
-          <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files?.[0] || null)} />
-          <textarea placeholder="Descriere" value={form.description} onChange={e => setForm({...form, description: e.target.value})} />
-          <button disabled={saving}>{saving ? 'Se salvează...' : 'Adaugă produs'}</button>
-        </form>}
-      </section>}
+      {adminOpen && (
+        <section className="admin-panel">
+          <h2>Panou Admin</h2>
 
-      <main id="produse" className="products-section">
-        <div className="section-title">
-          <p className="eyebrow dark">Magazin online</p>
-          <h2>Produsele noastre</h2>
-        </div>
-        <div className="filters">
-          {categories.map(c => <button key={c} className={category === c ? 'active' : ''} onClick={() => setCategory(c)}>{c}</button>)}
-        </div>
-        {loading ? <p className="empty">Se încarcă produsele...</p> : visibleProducts.length === 0 ? <p className="empty">Nu există produse încă. Intră la Admin și adaugă primul produs.</p> : <div className="grid">
-          {visibleProducts.map(p => <article className="card" key={p.id}>
-            <div className="img-wrap"><img src={p.image_url || 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?auto=format&fit=crop&w=900&q=80'} alt={p.name} /></div>
-            <div className="card-body">
-              <span className="tag">{p.category}</span>
-              <h3>{p.name}</h3>
-              <p>{p.description}</p>
-              <div className="price-row"><strong>{p.price} lei</strong><span>{p.stock > 0 ? `Stoc: ${p.stock}` : 'Indisponibil'}</span></div>
-              <div className="actions">
-                <a className="whatsapp" href={whatsapp(p)} target="_blank">Comandă WhatsApp</a>
-                <a className="email" href={email(p)}>Email</a>
-              </div>
-              {isAdmin && <div className="admin-actions">
-                <button onClick={() => toggleActive(p)}>{p.active ? 'Ascunde' : 'Activează'}</button>
-                <button className="danger" onClick={() => deleteProduct(p.id)}>Șterge</button>
-              </div>}
+          {!isAdmin ? (
+            <div className="login-box">
+              <input
+                type="password"
+                placeholder="Parola admin"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+              />
+              <button onClick={loginAdmin}>Intră</button>
+              <small>Parola inițială este: admin123</small>
             </div>
-          </article>)}
-        </div>}
-      </main>
+          ) : (
+            <form className="form" onSubmit={addPost}>
+              <input
+                placeholder="Titlu postare"
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+              />
 
-      <footer id="contact">
-        <h2>NaturaLife.ro</h2>
-        <p>Comenzi pe WhatsApp sau email. Produse naturale, alese cu grijă.</p>
-        <p>© {new Date().getFullYear()} NaturaLife</p>
+              <input
+                placeholder="Descriere scurtă pentru prima pagină"
+                value={form.excerpt}
+                onChange={e => setForm({ ...form, excerpt: e.target.value })}
+              />
+
+              <select
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+              >
+                <option value="noutati">Noutăți</option>
+                <option value="vanzari">Vânzări</option>
+                <option value="diverse">Diverse</option>
+              </select>
+
+              <input
+                placeholder="Link poză, opțional"
+                value={form.image_url}
+                onChange={e => setForm({ ...form, image_url: e.target.value })}
+              />
+
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={e => setImageFile(e.target.files?.[0] || null)}
+              />
+
+              <textarea
+                placeholder="Scrie aici textul postării..."
+                value={form.content}
+                onChange={e => setForm({ ...form, content: e.target.value })}
+              />
+
+              <button disabled={saving}>
+                {saving ? 'Se publică...' : 'Publică postarea'}
+              </button>
+            </form>
+          )}
+        </section>
+      )}
+
+      {page === 'contact' ? (
+        <section className="single-page">
+          <h2>Contact Naturalife.ro</h2>
+          <p>Email: {EMAIL}</p>
+          <p>Telefon / WhatsApp: adaugi aici numărul tău.</p>
+          <p>Poți folosi această pagină pentru comenzi, întrebări sau colaborări.</p>
+        </section>
+      ) : selectedPost ? (
+        <article className="post-full">
+          <button className="back-btn" onClick={() => setSelectedPost(null)}>← Înapoi</button>
+
+          {selectedPost.image_url && (
+            <img src={selectedPost.image_url} alt={selectedPost.title} />
+          )}
+
+          <p className="tag">{selectedPost.category} • {selectedPost.views || 0} vizualizări</p>
+          <h2>{selectedPost.title}</h2>
+          <div className="post-text">{selectedPost.content}</div>
+
+          {isAdmin && (
+            <button className="danger" onClick={() => deletePost(selectedPost.id)}>
+              Șterge postarea
+            </button>
+          )}
+        </article>
+      ) : (
+        <main className="posts-section">
+          {loading ? (
+            <p className="empty">Se încarcă postările...</p>
+          ) : filteredPosts.length === 0 ? (
+            <p className="empty">Nu există postări încă. Intră la Admin și adaugă prima postare.</p>
+          ) : (
+            <div className="grid">
+              {filteredPosts.map(post => (
+                <article className="card" key={post.id} onClick={() => openPost(post)}>
+                  <div className="img-wrap">
+                    <img
+                      src={post.image_url || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80'}
+                      alt={post.title}
+                    />
+                  </div>
+
+                  <div className="card-body">
+                    <span className="tag">{post.category}</span>
+                    <h3>{post.title}</h3>
+                    <p>{post.excerpt}</p>
+                    <div className="card-footer">
+                      <span>{post.views || 0} vizualizări</span>
+                      <strong>Citește →</strong>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </main>
+      )}
+
+      <footer>
+        <h2>Naturalife.ro</h2>
+        <p>Postări zilnice, natură, poze, idei și produse frumoase.</p>
+        <p>© {new Date().getFullYear()} Naturalife.ro</p>
       </footer>
     </div>
   )

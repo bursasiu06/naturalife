@@ -300,6 +300,11 @@ export default function App() {
     return `https://wa.me/?text=${encodeURIComponent(`${post.title} - ${postUrl(post)}`)}`
   }
 
+  function handleShareClick(e) {
+    // Important: când apeși pe iconița de share de pe card, nu deschidem postarea.
+    e.stopPropagation()
+  }
+
   async function copyPostLink(post) {
     try {
       await navigator.clipboard.writeText(postUrl(post))
@@ -705,25 +710,43 @@ export default function App() {
           flex: 0 0 auto;
         }
 
-        .miniShareFb {
-          width: 26px;
-          height: 26px;
+        .miniShareBtn {
+          width: 27px;
+          height: 27px;
           border-radius: 999px;
           display: inline-grid;
           place-items: center;
-          background: #eef4ff;
-          color: #1877f2;
           text-decoration: none;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 950;
-          border: 1px solid rgba(24, 119, 242, 0.18);
+          border: 1px solid rgba(0, 0, 0, 0.08);
           transition: 0.2s;
         }
 
-        .miniShareFb:hover {
-          transform: translateY(-1px);
-          background: #1877f2;
+        .miniShareBtn:hover {
+          transform: translateY(-1px) scale(1.04);
           color: #fff;
+        }
+
+        .miniShareFb {
+          background: #eef4ff;
+          color: #1877f2;
+          border-color: rgba(24, 119, 242, 0.18);
+        }
+
+        .miniShareFb:hover {
+          background: #1877f2;
+        }
+
+        .miniShareWa {
+          background: #effff5;
+          color: #15a64a;
+          border-color: rgba(37, 211, 102, 0.22);
+          font-size: 14px;
+        }
+
+        .miniShareWa:hover {
+          background: #25d366;
         }
 
         .readMore {
@@ -1390,14 +1413,25 @@ export default function App() {
                               </span>
 
                               <a
-                                className="miniShareFb"
+                                className="miniShareBtn miniShareFb"
                                 href={facebookShareUrl(post)}
                                 target="_blank"
                                 rel="noreferrer"
                                 title="Distribuie pe Facebook"
-                                onClick={e => e.stopPropagation()}
+                                onClick={handleShareClick}
                               >
                                 f
+                              </a>
+
+                              <a
+                                className="miniShareBtn miniShareWa"
+                                href={whatsappShareUrl(post)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="Distribuie pe WhatsApp"
+                                onClick={handleShareClick}
+                              >
+                                💬
                               </a>
                             </span>
                           </div>

@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import useEffect(() => {
+  if (selectedPost) {
+    document.title = `${selectedPost.title} | Naturalife.ro`
+  } else {
+    document.title = 'Naturalife.ro - Natură, Ciuperci, Pietre și Vânzări'
+  }
+}, [selectedPost])
 import { supabase } from './supabase'
 
 const ADMIN_PASSWORD = 'Danimea.06'

@@ -266,16 +266,18 @@ export default function App() {
           background-size: cover;
           background-position: center;
           color: white;
-          padding: 18px 16px 78px;
+          padding: 18px 16px 70px;
         }
         .wrap { width: min(1180px, 100%); margin: 0 auto; }
 
         .header {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
           gap: 18px;
-          padding: 10px 0 34px;
+          padding: 8px 0 32px;
+          text-align: center;
         }
         .logo {
           display: flex;
@@ -300,22 +302,24 @@ export default function App() {
         .nav {
           display: flex;
           align-items: center;
-          justify-content: flex-end;
-          gap: 8px;
-          padding: 6px;
+          justify-content: center;
+          gap: 10px;
+          padding: 8px;
           border-radius: 999px;
-          background: rgba(255,255,255,.13);
-          border: 1px solid rgba(255,255,255,.18);
+          background: rgba(255,255,255,.16);
+          border: 1px solid rgba(255,255,255,.22);
           backdrop-filter: blur(14px);
+          margin: 0 auto;
+          flex-wrap: wrap;
         }
         .nav-btn {
-          min-width: 92px;
-          height: 42px;
+          min-width: 118px;
+          height: 44px;
           border: 0;
           border-radius: 999px;
-          padding: 0 14px;
+          padding: 0 18px;
           color: white;
-          background: transparent;
+          background: rgba(255,255,255,.08);
           font-size: 14px;
           font-weight: 900;
           transition: .18s ease;
@@ -330,10 +334,12 @@ export default function App() {
 
         .hero {
           display: grid;
-          grid-template-columns: 1.1fr .9fr;
-          align-items: end;
-          gap: 28px;
-          min-height: 330px;
+          grid-template-columns: 1fr;
+          align-items: center;
+          justify-items: center;
+          text-align: center;
+          gap: 22px;
+          min-height: 280px;
         }
         .eyebrow {
           display: inline-flex;
@@ -362,8 +368,8 @@ export default function App() {
           line-height: 1.6;
         }
         .hero-card {
-          justify-self: end;
-          width: min(390px, 100%);
+          justify-self: center;
+          width: min(520px, 100%);
           padding: 22px;
           border-radius: 30px;
           background: rgba(255,255,255,.14);
@@ -376,6 +382,7 @@ export default function App() {
         .actions {
           display: flex;
           flex-wrap: wrap;
+          justify-content: center;
           gap: 10px;
           margin-top: 22px;
         }
@@ -455,8 +462,8 @@ export default function App() {
 
         .grid {
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          gap: 16px;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          gap: 14px;
         }
         .card {
           overflow: hidden;
@@ -490,14 +497,14 @@ export default function App() {
         }
         .card h3 {
           margin: 0 0 7px;
-          font-size: 18px;
+          font-size: 16px;
           line-height: 1.16;
           letter-spacing: -.035em;
         }
         .card p {
           margin: 0 0 12px;
           color: #62705e;
-          font-size: 14px;
+          font-size: 13px;
           line-height: 1.45;
         }
         .meta {
@@ -589,18 +596,18 @@ export default function App() {
         @media (max-width: 1050px) {
           .grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .hero { grid-template-columns: 1fr; }
-          .hero-card { justify-self: start; }
+          .hero-card { justify-self: center; }
         }
         @media (max-width: 780px) {
           .top-shell { padding-bottom: 62px; }
-          .header { align-items: flex-start; flex-direction: column; }
+          .header { align-items: center; flex-direction: column; }
           .nav {
             width: 100%;
-            justify-content: flex-start;
+            justify-content: center;
             overflow-x: auto;
             border-radius: 22px;
           }
-          .nav-btn { min-width: auto; padding: 0 13px; }
+          .nav-btn { min-width: 100px; padding: 0 13px; }
           .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
           .form-grid, .gallery { grid-template-columns: 1fr; }
           .section-head { align-items: flex-start; flex-direction: column; }

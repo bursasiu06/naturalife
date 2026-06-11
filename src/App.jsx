@@ -1,123 +1,99 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
 
-const WHATSAPP_NUMBER = '40753921023'
+const ADMIN_PASSWORD = 'admin123'
 const EMAIL = 'bursasiu_1@yahoo.com'
-const DEFAULT_ADMIN_PASSWORD = 'admin123'
-
-const CATEGORIES = [
-  'Toate',
-  'Pietre Unicat',
-  'Obiecte Lemn',
-  'Căsuțe Păsărele',
-  'Diverse'
-]
 
 export default function App() {
-  const [products, setProducts] = useState([])
+  const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState('acasa')
+  const [selectedPost, setSelectedPost] = useState(null)
+
   const [adminOpen, setAdminOpen] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
   const [password, setPassword] = useState('')
-  const [currentAdminPassword, setCurrentAdminPassword] = useState(DEFAULT_ADMIN_PASSWORD)
-  const [oldPassword, setOldPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
   const [saving, setSaving] = useState(false)
-  const [selectedProduct, setSelectedProduct] = useState(null)
-  const [selectedCategory, setSelectedCategory] = useState('Toate')
+  const [imageFile, setImageFile] = useState(null)
 
   const [form, setForm] = useState({
-    name: '',
-    description: '',
-    details: '',
-    price: '',
-    stock: '1',
-    category: 'Pietre Unicat',
+    title: '',
+    excerpt: '',
+    content: '',
+    category: 'noutati',
     image_url: ''
   })
 
-  const [imageFile, setImageFile] = useState(null)
-
   useEffect(() => {
-    const savedPassword = localStorage.getItem('naturalifeAdminPassword')
-    if (savedPassword) setCurrentAdminPassword(savedPassword)
-    loadProducts()
+    loadPosts()
   }, [])
 
-  async function loadProducts() {
+  async function loadPosts() {
     setLoading(true)
     const { data, error } = await supabase
-      .from('products')
+      .from('posts')
       .select('*')
       .order('created_at', { ascending: false })
 
     if (error) console.error(error)
-    setProducts(data || [])
+    setPosts(data || [])
     setLoading(false)
   }
 
-  const visibleProducts = useMemo(() => {
-    return products.filter(product => {
-      const active = product.active !== false
-      const categoryMatch =
-        selectedCategory === 'Toate' || product.category === selectedCategory
+  const filteredPosts = useMemo(() => {
+    if (page === 'top') {
+      return [...posts].sort((a, b) => (b.views || 0) - (a.views || 0))
+    }
 
-      return active && categoryMatch
-    })
-  }, [products, selectedCategory])
+    if (page === 'noutati') {
+      return posts.filter(p => p.category === 'noutati')
+    }
+
+    if (page === 'vanzari') {
+      return posts.filter(p => p.category === 'vanzari')
+    }
+
+    return posts
+  }, [posts, page])
 
   function loginAdmin() {
-    if (password === currentAdminPassword) {
-      setIsAdmin(true)
-      setPassword('')
-    } else {
-      alert('Parolă greșită')
-    }
+    if (password === ADMIN_PASSWORD) setIsAdmin(true)
+    else alert('Parolă greșită')
   }
 
-  function changeAdminPassword() {
-    if (oldPassword !== currentAdminPassword) {
-      alert('Parola veche nu este corectă')
-      return
-    }
-
-    if (newPassword.length < 4) {
-      alert('Parola nouă trebuie să aibă minim 4 caractere')
-      return
-    }
-
-    localStorage.setItem('naturalifeAdminPassword', newPassword)
-    setCurrentAdminPassword(newPassword)
-    setOldPassword('')
-    setNewPassword('')
-    alert('Parola a fost schimbată')
+  function makeSlug(text) {
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
   }
 
   async function uploadImage() {
     if (!imageFile) return form.image_url
 
     const ext = imageFile.name.split('.').pop()
-    const fileName = `${Date.now()}.${ext}`
+    const fileName = `${Date.now()}-${makeSlug(form.title)}.${ext}`
 
     const { error } = await supabase.storage
-      .from('products')
+      .from('post-images')
       .upload(fileName, imageFile)
 
     if (error) throw error
 
     const { data } = supabase.storage
-      .from('products')
+      .from('post-images')
       .getPublicUrl(fileName)
 
     return data.publicUrl
   }
 
-  async function addProduct(e) {
+  async function addPost(e) {
     e.preventDefault()
 
-    if (!form.name || !form.price) {
-      alert('Completează numele și prețul produsului')
-      return
+    if (!form.title || !form.excerpt || !form.content) {
+      return alert('Completează titlul, descrierea scurtă și textul postării.')
     }
 
     setSaving(true)
@@ -125,33 +101,28 @@ export default function App() {
     try {
       const imageUrl = await uploadImage()
 
-      const { error } = await supabase.from('products').insert({
-        id: Date.now(),
-        name: form.name,
-        description: form.description,
-        details: form.details,
-        price: Number(form.price),
-        image_url: imageUrl,
-        stock: Number(form.stock || 0),
+      const { error } = await supabase.from('posts').insert({
+        title: form.title,
+        slug: `${makeSlug(form.title)}-${Date.now()}`,
+        excerpt: form.excerpt,
+        content: form.content,
         category: form.category,
-        active: true
+        image_url: imageUrl,
+        views: 0
       })
 
       if (error) throw error
 
       setForm({
-        name: '',
-        description: '',
-        details: '',
-        price: '',
-        stock: '1',
-        category: 'Pietre Unicat',
+        title: '',
+        excerpt: '',
+        content: '',
+        category: 'noutati',
         image_url: ''
       })
-
       setImageFile(null)
-      await loadProducts()
-      alert('Produs adăugat cu succes')
+      await loadPosts()
+      alert('Postarea a fost publicată cu succes!')
     } catch (err) {
       alert('Eroare: ' + err.message)
     }
@@ -159,345 +130,198 @@ export default function App() {
     setSaving(false)
   }
 
-  async function deleteProduct(id) {
-    if (!confirm('Sigur vrei să ștergi produsul?')) return
+  async function openPost(post) {
+    setSelectedPost(post)
+
+    const newViews = (post.views || 0) + 1
+
+    await supabase
+      .from('posts')
+      .update({ views: newViews })
+      .eq('id', post.id)
+
+    setPosts(current =>
+      current.map(p => p.id === post.id ? { ...p, views: newViews } : p)
+    )
+  }
+
+  async function deletePost(id) {
+    if (!confirm('Ștergi această postare?')) return
 
     const { error } = await supabase
-      .from('products')
+      .from('posts')
       .delete()
       .eq('id', id)
 
     if (error) alert(error.message)
-    await loadProducts()
+
+    setSelectedPost(null)
+    await loadPosts()
   }
 
-  async function toggleActive(product) {
-    const { error } = await supabase
-      .from('products')
-      .update({ active: !product.active })
-      .eq('id', product.id)
-
-    if (error) alert(error.message)
-    await loadProducts()
+  function pageTitle() {
+    if (page === 'top') return 'Top Postări'
+    if (page === 'noutati') return 'Noutăți'
+    if (page === 'vanzari') return 'Vânzări'
+    if (page === 'contact') return 'Contact'
+    return 'Naturalife.ro'
   }
 
-  function whatsapp(product) {
-    const msg =
-      'Bună ziua! Vreau să comand de pe NaturaLife.ro:\n\n' +
-      '🛒 Produs: ' + product.name + '\n' +
-      '📂 Categoria: ' + product.category + '\n' +
-      '💰 Preț: ' + product.price + ' lei\n' +
-      '📦 Cantitate: \n\n' +
-      'Datele mele pentru comandă:\n' +
-      '👤 Nume: \n' +
-      '📞 Telefon: \n' +
-      '🏠 Adresă livrare: \n\n' +
-      'Mulțumesc!'
-
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`
-  }
-
-  function email(product) {
-    const subject = `Comandă NaturaLife - ${product.name}`
-    const body =
-      `Bună ziua,%0D%0A%0D%0A` +
-      `Vreau să comand produsul: ${product.name}%0D%0A` +
-      `Categoria: ${product.category}%0D%0A` +
-      `Preț: ${product.price} lei%0D%0A%0D%0A` +
-      `Nume:%0D%0ATelefon:%0D%0AAdresă:`
-
-    return `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${body}`
-  }
-
-  async function shareProduct(product) {
-    const text = `Vezi produsul ${product.name} pe NaturaLife.ro - ${product.price} lei`
-    const url = window.location.href
-
-    if (navigator.share) {
-      await navigator.share({
-        title: product.name,
-        text,
-        url
-      })
-    } else {
-      await navigator.clipboard.writeText(`${text} ${url}`)
-      alert('Link copiat. Îl poți lipi pe Facebook, WhatsApp sau Messenger.')
-    }
-  }
-
-  function openCategory(category) {
-    setSelectedCategory(category)
-    setSelectedProduct(null)
-
-    setTimeout(() => {
-      document.getElementById('produse')?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
+  function pageSubtitle() {
+    if (page === 'top') return 'Cele mai accesate postări apar primele.'
+    if (page === 'noutati') return 'Ultimele noutăți și postări din natură.'
+    if (page === 'vanzari') return 'Produse, obiecte și lucruri disponibile.'
+    if (page === 'contact') return 'Pentru întrebări, colaborări sau comenzi.'
+    return 'Blog modern cu postări zilnice, natură, poze, noutăți și vânzări.'
   }
 
   return (
     <div className="site">
+      <nav className="floating-nav">
+        <button onClick={() => { setPage('acasa'); setSelectedPost(null) }}>Acasă</button>
+        <button onClick={() => { setPage('top'); setSelectedPost(null) }}>Top Postări</button>
+        <button onClick={() => { setPage('noutati'); setSelectedPost(null) }}>Noutăți</button>
+        <button onClick={() => { setPage('vanzari'); setSelectedPost(null) }}>Vânzări</button>
+        <button onClick={() => { setPage('contact'); setSelectedPost(null) }}>Contact</button>
+      </nav>
+
+      <button className="admin-float" onClick={() => setAdminOpen(!adminOpen)}>
+        Admin
+      </button>
+
       <header className="hero">
-        <nav className="nav">
-          <div className="brand"><span>🌿</span> NaturaLife</div>
-
-          <div className="nav-links">
-            <button onClick={() => openCategory('Toate')}>Acasă</button>
-            <button onClick={() => openCategory('Pietre Unicat')}>Pietre Unicat</button>
-            <button onClick={() => openCategory('Obiecte Lemn')}>Obiecte Lemn</button>
-            <button onClick={() => openCategory('Căsuțe Păsărele')}>Căsuțe Păsărele</button>
-            <button onClick={() => openCategory('Diverse')}>Diverse</button>
-            <a href="#contact">Contact</a>
-            <button onClick={() => setAdminOpen(!adminOpen)}>Admin</button>
-          </div>
-        </nav>
-
-        <div className="hero-content">
-          <p className="eyebrow">Produse naturale și obiecte unicat</p>
-          <h1>Lucruri frumoase, alese din natură</h1>
-          <p>Pietre unicat, obiecte din lemn, căsuțe pentru păsărele și produse diverse cu aspect premium.</p>
-          <a className="primary" href="#produse">Vezi produsele</a>
-        </div>
+        <p className="eyebrow">🌿 Blog natural</p>
+        <h1>{pageTitle()}</h1>
+        <p>{pageSubtitle()}</p>
       </header>
 
       {adminOpen && (
         <section className="admin-panel">
-          <h2>Panou administrator</h2>
+          <h2>Panou Admin</h2>
 
           {!isAdmin ? (
-            <div className="login-row">
+            <div className="login-box">
               <input
                 type="password"
-                placeholder="Introdu parola de admin"
+                placeholder="Parola admin"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
               />
               <button onClick={loginAdmin}>Intră</button>
+              <small>Parola inițială este: admin123</small>
             </div>
           ) : (
-            <>
-              <div className="admin-tools">
-                <h3>Schimbă parola admin</h3>
-                <input
-                  type="password"
-                  placeholder="Parola veche"
-                  value={oldPassword}
-                  onChange={e => setOldPassword(e.target.value)}
-                />
-                <input
-                  type="password"
-                  placeholder="Parola nouă"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                />
-                <button onClick={changeAdminPassword}>Schimbă parola</button>
-              </div>
+            <form className="form" onSubmit={addPost}>
+              <input
+                placeholder="Titlu postare"
+                value={form.title}
+                onChange={e => setForm({ ...form, title: e.target.value })}
+              />
 
-              <form className="form" onSubmit={addProduct}>
-                <input
-                  placeholder="Nume produs"
-                  value={form.name}
-                  onChange={e => setForm({ ...form, name: e.target.value })}
-                />
+              <input
+                placeholder="Descriere scurtă pentru prima pagină"
+                value={form.excerpt}
+                onChange={e => setForm({ ...form, excerpt: e.target.value })}
+              />
 
-                <input
-                  placeholder="Preț, ex: 35"
-                  type="number"
-                  value={form.price}
-                  onChange={e => setForm({ ...form, price: e.target.value })}
-                />
+              <select
+                value={form.category}
+                onChange={e => setForm({ ...form, category: e.target.value })}
+              >
+                <option value="noutati">Noutăți</option>
+                <option value="vanzari">Vânzări</option>
+                <option value="diverse">Diverse</option>
+              </select>
 
-                <input
-                  placeholder="Stoc"
-                  type="number"
-                  value={form.stock}
-                  onChange={e => setForm({ ...form, stock: e.target.value })}
-                />
+              <input
+                placeholder="Link poză, opțional"
+                value={form.image_url}
+                onChange={e => setForm({ ...form, image_url: e.target.value })}
+              />
 
-                <select
-                  value={form.category}
-                  onChange={e => setForm({ ...form, category: e.target.value })}
-                >
-                  <option value="Pietre Unicat">Pietre Unicat</option>
-                  <option value="Obiecte Lemn">Obiecte Lemn</option>
-                  <option value="Căsuțe Păsărele">Căsuțe Păsărele</option>
-                  <option value="Diverse">Diverse</option>
-                </select>
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={e => setImageFile(e.target.files?.[0] || null)}
+              />
 
-                <input
-                  placeholder="Link poză, opțional"
-                  value={form.image_url}
-                  onChange={e => setForm({ ...form, image_url: e.target.value })}
-                />
+              <textarea
+                placeholder="Scrie aici textul postării..."
+                value={form.content}
+                onChange={e => setForm({ ...form, content: e.target.value })}
+              />
 
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={e => setImageFile(e.target.files?.[0] || null)}
-                />
-
-                <textarea
-                  placeholder="Descriere scurtă pentru card"
-                  value={form.description}
-                  onChange={e => setForm({ ...form, description: e.target.value })}
-                />
-
-                <textarea
-                  placeholder="Detalii complete produs - apar când clientul deschide produsul"
-                  value={form.details}
-                  onChange={e => setForm({ ...form, details: e.target.value })}
-                />
-
-                <button disabled={saving}>
-                  {saving ? 'Se salvează...' : 'Adaugă produs'}
-                </button>
-              </form>
-            </>
+              <button disabled={saving}>
+                {saving ? 'Se publică...' : 'Publică postarea'}
+              </button>
+            </form>
           )}
         </section>
       )}
 
-      <main id="produse" className="products-section">
-        <div className="section-title">
-          <p className="eyebrow dark">Magazin online</p>
-          <h2>
-            {selectedCategory === 'Toate'
-              ? 'Toate produsele'
-              : selectedCategory}
-          </h2>
-          <p>
-            {selectedCategory === 'Toate'
-              ? 'Aici apar toate produsele, din toate categoriile.'
-              : `Aici apar produsele din categoria ${selectedCategory}.`}
-          </p>
-        </div>
+      {page === 'contact' ? (
+        <section className="single-page">
+          <h2>Contact Naturalife.ro</h2>
+          <p>Email: {EMAIL}</p>
+          <p>Telefon / WhatsApp: adaugi aici numărul tău.</p>
+          <p>Poți folosi această pagină pentru comenzi, întrebări sau colaborări.</p>
+        </section>
+      ) : selectedPost ? (
+        <article className="post-full">
+          <button className="back-btn" onClick={() => setSelectedPost(null)}>← Înapoi</button>
 
-        <div className="category-menu">
-          {CATEGORIES.map(category => (
-            <button
-              key={category}
-              className={selectedCategory === category ? 'active' : ''}
-              onClick={() => openCategory(category)}
-            >
-              {category}
+          {selectedPost.image_url && (
+            <img src={selectedPost.image_url} alt={selectedPost.title} />
+          )}
+
+          <p className="tag">{selectedPost.category} • {selectedPost.views || 0} vizualizări</p>
+          <h2>{selectedPost.title}</h2>
+          <div className="post-text">{selectedPost.content}</div>
+
+          {isAdmin && (
+            <button className="danger" onClick={() => deletePost(selectedPost.id)}>
+              Șterge postarea
             </button>
-          ))}
-        </div>
-
-        {loading ? (
-          <p className="empty">Se încarcă produsele...</p>
-        ) : visibleProducts.length === 0 ? (
-          <p className="empty">Nu există produse în această categorie.</p>
-        ) : (
-          <div className="grid">
-            {visibleProducts.map(product => (
-              <article className="card" key={product.id}>
-                <div className="img-wrap" onClick={() => setSelectedProduct(product)}>
-                  <img
-                    src={product.image_url || 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?auto=format&fit=crop&w=900&q=80'}
-                    alt={product.name}
-                  />
-                </div>
-
-                <div className="card-body">
-                  <span className="tag">{product.category}</span>
-
-                  <h3 onClick={() => setSelectedProduct(product)}>
-                    {product.name}
-                  </h3>
-
-                  <p>{product.description}</p>
-
-                  <div className="price-row">
-                    <strong>{product.price} lei</strong>
-                    <span>{product.stock > 0 ? `Stoc: ${product.stock}` : 'Indisponibil'}</span>
+          )}
+        </article>
+      ) : (
+        <main className="posts-section">
+          {loading ? (
+            <p className="empty">Se încarcă postările...</p>
+          ) : filteredPosts.length === 0 ? (
+            <p className="empty">Nu există postări încă. Intră la Admin și adaugă prima postare.</p>
+          ) : (
+            <div className="grid">
+              {filteredPosts.map(post => (
+                <article className="card" key={post.id} onClick={() => openPost(post)}>
+                  <div className="img-wrap">
+                    <img
+                      src={post.image_url || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=1200&q=80'}
+                      alt={post.title}
+                    />
                   </div>
 
-                  <div className="actions">
-                    <a className="whatsapp" href={whatsapp(product)} target="_blank" rel="noreferrer">
-                      WhatsApp
-                    </a>
-
-                    <button className="share" onClick={() => shareProduct(product)}>
-                      Share
-                    </button>
-                  </div>
-
-                  <button className="details-btn" onClick={() => setSelectedProduct(product)}>
-                    Vezi detalii
-                  </button>
-
-                  {isAdmin && (
-                    <div className="admin-actions">
-                      <button onClick={() => toggleActive(product)}>
-                        {product.active ? 'Ascunde' : 'Activează'}
-                      </button>
-
-                      <button className="danger" onClick={() => deleteProduct(product.id)}>
-                        Șterge
-                      </button>
+                  <div className="card-body">
+                    <span className="tag">{post.category}</span>
+                    <h3>{post.title}</h3>
+                    <p>{post.excerpt}</p>
+                    <div className="card-footer">
+                      <span>{post.views || 0} vizualizări</span>
+                      <strong>Citește →</strong>
                     </div>
-                  )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
-      </main>
-
-      {selectedProduct && (
-        <div className="modal-bg" onClick={() => setSelectedProduct(null)}>
-          <div className="product-modal" onClick={e => e.stopPropagation()}>
-            <button className="close" onClick={() => setSelectedProduct(null)}>×</button>
-
-            <div className="modal-img">
-              <img
-                src={selectedProduct.image_url || 'https://images.unsplash.com/photo-1504545102780-26774c1bb073?auto=format&fit=crop&w=900&q=80'}
-                alt={selectedProduct.name}
-              />
+                  </div>
+                </article>
+              ))}
             </div>
-
-            <div className="modal-info">
-              <span className="tag">{selectedProduct.category}</span>
-              <h2>{selectedProduct.name}</h2>
-              <strong className="modal-price">{selectedProduct.price} lei</strong>
-
-              <p>{selectedProduct.description}</p>
-
-              {selectedProduct.details && (
-                <div className="details-text">
-                  <h3>Detalii produs</h3>
-                  <p>{selectedProduct.details}</p>
-                </div>
-              )}
-
-              <p className="stock-info">
-                {selectedProduct.stock > 0
-                  ? `Disponibil în stoc: ${selectedProduct.stock}`
-                  : 'Momentan indisponibil'}
-              </p>
-
-              <div className="modal-actions">
-                <a className="whatsapp" href={whatsapp(selectedProduct)} target="_blank" rel="noreferrer">
-                  Comandă pe WhatsApp
-                </a>
-
-                <a className="email" href={email(selectedProduct)}>
-                  Email
-                </a>
-
-                <button className="share" onClick={() => shareProduct(selectedProduct)}>
-                  Distribuie
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+          )}
+        </main>
       )}
 
-      <footer id="contact">
-        <h2>NaturaLife.ro</h2>
-        <p>Comenzi pe WhatsApp sau email. Produse naturale, obiecte unicat și creații alese cu grijă.</p>
-        <p>© {new Date().getFullYear()} NaturaLife</p>
+      <footer>
+        <h2>Naturalife.ro</h2>
+        <p>Postări zilnice, natură, poze, idei și produse frumoase.</p>
+        <p>© {new Date().getFullYear()} Naturalife.ro</p>
       </footer>
     </div>
   )

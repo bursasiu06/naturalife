@@ -330,6 +330,67 @@ export default function App() {
     return []
   }
 
+  // Funcție care intercalează textul cu imaginile folosind etichete gen [imagine-1]
+  function renderModernContent(content, images) {
+    if (!content) return null;
+    const allImages = images || [];
+    // Poza 0 e imaginea mare de sus (cover). Restul le putem intercala.
+    const extraImages = allImages.slice(1); 
+    const usedIndexes = new Set(); // Ținem minte ce poze am folosit deja
+
+    // Împărțim textul pe bucăți folosind etichetele
+    const parts = content.split(/(\[imagine-\d+\])/g);
+
+    const renderedText = parts.map((part, index) => {
+      // Verificăm dacă bucata e o etichetă de imagine
+      const match = part.match(/\[imagine-(\d+)\]/);
+      if (match) {
+        const imgIdx = parseInt(match[1], 10) - 1; // [imagine-1] va afișa prima poză extra (adică a 2-a încărcată)
+        if (extraImages[imgIdx]) {
+          usedIndexes.add(imgIdx);
+          return (
+            <figure key={index} className="inlineFigure">
+              <img src={extraImages[imgIdx]} alt={`Imagine intercalată ${imgIdx + 1}`} />
+            </figure>
+          );
+        }
+        return null; // Dacă ai scris [imagine-5] dar ai încărcat doar 2 poze, nu arată nimic stricat
+      }
+      
+      // Dacă e text normal, îl aranjăm frumos pe paragrafe
+      if (part.trim() === '') return null;
+      return (
+        <div key={index} className="textBlock">
+          {part.split('\n').map((line, i) => (
+            line.trim() ? <p key={i}>{line}</p> : <br key={i} />
+          ))}
+        </div>
+      );
+    });
+
+    // Pozele pe care le-ai încărcat dar NU le-ai pus în text cu etichete, le punem la final
+    const remainingImages = extraImages.filter((_, idx) => !usedIndexes.has(idx));
+
+    return (
+      <>
+        <div className="modernArticleContent">
+          {renderedText}
+        </div>
+
+        {remainingImages.length > 0 && (
+          <div className="modernGallery">
+            <h3 className="galleryTitle">Mai multe imagini</h3>
+            <div className="galleryGrid">
+              {remainingImages.map((img, idx) => (
+                <img key={`rem-${idx}`} src={img} alt="Galerie" />
+              ))}
+            </div>
+          </div>
+        )}
+      </>
+    );
+  }
+
   const pageTitle = {
     acasa: 'Cele mai noi postări',
     top: 'Top postări',
@@ -597,7 +658,6 @@ export default function App() {
           font-weight: 600;
         }
 
-        /* GRILĂ - 4 COLOANE PE PC, 2 PE TELEFON */
         .postsGrid {
           display: grid;
           grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -791,7 +851,7 @@ export default function App() {
           color: #4c5339;
         }
 
-        /* --- STILURI PAGINĂ NOUĂ POSTARE (NU MAI E MODAL) --- */
+        /* --- STILURI PAGINĂ NOUĂ POSTARE --- */
         .singlePost {
           background: #fff;
           border-radius: 26px;
@@ -852,25 +912,63 @@ export default function App() {
           font-size: 16px;
         }
 
-        .modalContent {
-          white-space: pre-wrap;
-          line-height: 1.65;
+        /* --- STILURI MODERNE PENTRU TEXT ȘI IMAGINI INTERCALATE --- */
+        .modernArticleContent {
           color: #26291d;
-          font-size: 16px;
+          font-size: 17px;
+          line-height: 1.8;
         }
 
-        .gallery {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-          gap: 10px;
-          margin: 18px 0;
+        .textBlock p {
+          margin: 0 0 18px 0;
         }
 
-        .gallery img {
+        .inlineFigure {
+          margin: 36px 0;
+          padding: 0;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 12px 34px rgba(0,0,0,0.1);
+        }
+
+        .inlineFigure img {
           width: 100%;
-          height: 140px;
+          display: block;
+          height: auto;
+          max-height: 550px;
           object-fit: cover;
-          border-radius: 10px;
+        }
+
+        /* Galerie modernă la final pentru restul pozelor */
+        .modernGallery {
+          margin-top: 50px;
+          padding-top: 30px;
+          border-top: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .galleryTitle {
+          font-size: 20px;
+          margin: 0 0 20px;
+          color: #1e2413;
+        }
+
+        .galleryGrid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+          gap: 16px;
+        }
+
+        .galleryGrid img {
+          width: 100%;
+          height: 220px;
+          object-fit: cover;
+          border-radius: 14px;
+          transition: transform 0.3s;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .galleryGrid img:hover {
+          transform: scale(1.02);
         }
 
         .shareBox {
@@ -1076,8 +1174,6 @@ export default function App() {
           }
         }
 
-
-
         @media (max-width: 899px) {
           .postsGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1120,7 +1216,6 @@ export default function App() {
             font-size: 14px;
           }
 
-          /* 2 COLOANE PE TELEFON MEREU */
           .postsGrid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 12px;
@@ -1165,7 +1260,6 @@ export default function App() {
             grid-template-columns: 1fr;
           }
 
-          /* Adaptări pentru noua pagină de postare pe telefon */
           .singlePostBody {
             padding: 24px 16px;
           }
@@ -1283,15 +1377,8 @@ export default function App() {
                     : `Vizualizări: ${selectedPost.views || 0}`}
                 </p>
 
-                {getImages(selectedPost).length > 1 && (
-                  <div className="gallery">
-                    {getImages(selectedPost).slice(1).map((img, index) => (
-                      <img key={`${img}-${index}`} src={img} alt={`${selectedPost.title} ${index + 2}`} />
-                    ))}
-                  </div>
-                )}
-
-                <div className="modalContent">{selectedPost.content}</div>
+                {/* Aici e funcția magică care așează frumos textul și imaginile */}
+                {renderModernContent(selectedPost.content, getImages(selectedPost))}
 
                 <div className="shareBox">
                   <p className="shareTitle">Distribuie această postare</p>
@@ -1488,7 +1575,7 @@ export default function App() {
 
                     <textarea
                       className="field"
-                      placeholder="Text complet"
+                      placeholder="Text complet. Pentru a insera poze printre rânduri, folosește [imagine-1], [imagine-2] etc."
                       value={form.content}
                       onChange={e => setForm({ ...form, content: e.target.value })}
                     />
@@ -1508,7 +1595,10 @@ export default function App() {
                       value={form.image_url}
                       onChange={e => setForm({ ...form, image_url: e.target.value })}
                     />
-
+                    
+                    <label style={{ fontSize: '13px', color: '#5f634f', fontWeight: 'bold' }}>
+                      Imagini (Prima e Cover-ul. Restul le poți intercala în text cu [imagine-1], [imagine-2]):
+                    </label>
                     <input
                       className="field"
                       type="file"
